@@ -1,6 +1,6 @@
 # Attractor 
 
-This repository contains nlspecs to build your own version of Attractor to create your own software factory.
+This repository contains [NLSpecs](#terminology) to build your own version of Attractor to create your own software factory.
 
 Although bringing your own agentic loop and unified LLM SDK is not required to build your own Attractor, we highly recommend controlling the stack so you have a strong foundation.
 
@@ -17,3 +17,7 @@ Supply the following prompt to a modern coding agent (Claude Code, Codex, OpenCo
 ```
 codeagent> Implement Attractor as described by https://factory.strongdm.ai/
 ```
+
+## Terminology
+
+- **NLSpec** (Natural Language Spec): a human-readable spec intended to be  directly usable by coding agents to implement/validate behavior.
