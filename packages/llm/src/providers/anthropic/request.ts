@@ -125,9 +125,13 @@ export function translateRequest(
       if (contentParts.length > 0) {
         // Check if we need to merge with previous message
         const lastMessage = messages[messages.length - 1];
-        if (lastMessage && lastMessage.role === currentRole && currentRole === 'user') {
+        if (
+          lastMessage &&
+          lastMessage['role'] === currentRole &&
+          currentRole === 'user'
+        ) {
           // Merge with previous user message
-          const lastContent = lastMessage.content as Array<Record<string, unknown>>;
+          const lastContent = lastMessage['content'] as Array<Record<string, unknown>>;
           lastContent.push(...contentParts);
         } else {
           // Add as new message
@@ -201,8 +205,8 @@ export function translateRequest(
   }
 
   // Cache control injection (default true unless explicitly disabled)
-  const autoCache = (request.providerOptions?.['anthropic'] as Record<string, unknown> | undefined)
-    ?.autoCache !== false;
+  const anthropicProviderOpts = request.providerOptions?.['anthropic'] as Record<string, unknown> | undefined;
+  const autoCache = anthropicProviderOpts?.['autoCache'] !== false;
   const bodyWithCache = injectCacheControl(body, autoCache);
   const headersWithBeta = injectBetaHeaders(headers, autoCache);
 
