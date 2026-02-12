@@ -81,9 +81,11 @@ describe('http', () => {
         url: 'https://example.com/api',
       });
 
-      const call = vi.mocked(globalThis.fetch).mock.calls[0];
-      const options = call[1] as Record<string, unknown>;
-      expect(options.headers).toHaveProperty('Content-Type', 'application/json');
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const options = calls[0]?.[1] as Record<string, unknown> | undefined;
+      const headers = options?.['headers'] as Record<string, string> | undefined;
+      expect(headers?.['Content-Type']).toBe('application/json');
     });
 
     it('should allow custom headers to override defaults', async () => {
@@ -101,11 +103,11 @@ describe('http', () => {
         headers: { 'Content-Type': 'application/xml' },
       });
 
-      const call = vi.mocked(globalThis.fetch).mock.calls[0];
-      const options = call[1] as Record<string, unknown>;
-      expect((options.headers as Record<string, string>)['Content-Type']).toBe(
-        'application/xml',
-      );
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const options = calls[0]?.[1] as Record<string, unknown> | undefined;
+      const headers = options?.['headers'] as Record<string, string> | undefined;
+      expect(headers?.['Content-Type']).toBe('application/xml');
     });
 
     it('should serialize body as JSON when provided', async () => {
@@ -124,9 +126,10 @@ describe('http', () => {
         body: bodyData,
       });
 
-      const call = vi.mocked(globalThis.fetch).mock.calls[0];
-      const options = call[1] as Record<string, unknown>;
-      expect(options.body).toBe(JSON.stringify(bodyData));
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const options = calls[0]?.[1] as Record<string, unknown> | undefined;
+      expect(options?.['body']).toBe(JSON.stringify(bodyData));
     });
 
     it('should convert native AbortError to SDK AbortError', async () => {
@@ -195,9 +198,11 @@ describe('http', () => {
         url: 'https://example.com/api',
       });
 
-      const call = vi.mocked(globalThis.fetch).mock.calls[0];
-      const options = call[1] as Record<string, unknown>;
-      expect(options.headers).toHaveProperty('Content-Type', 'application/json');
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const options = calls[0]?.[1] as Record<string, unknown> | undefined;
+      const headers = options?.['headers'] as Record<string, string> | undefined;
+      expect(headers?.['Content-Type']).toBe('application/json');
     });
 
     it('should throw AbortError if external signal is already aborted', async () => {
