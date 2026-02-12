@@ -6,7 +6,7 @@ type SSEEventArray = Array<SSEEvent>;
 /**
  * Creates a mock Response with a ReadableStream body from SSE-formatted strings.
  */
-function createMockResponse(sseLines: string[]): globalThis.Response {
+function createMockResponse(sseLines: Array<string>): globalThis.Response {
   const content = sseLines.join('\n');
   const encoder = new TextEncoder();
   const encodedContent = encoder.encode(content);
