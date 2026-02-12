@@ -84,6 +84,10 @@ export class Client {
     await Promise.allSettled(closePromises);
   }
 
+  resolveProviderName(request: LLMRequest): string {
+    return this.resolveProvider(request);
+  }
+
   private resolveProvider(request: LLMRequest): string {
     if (request.provider) {
       return request.provider;
