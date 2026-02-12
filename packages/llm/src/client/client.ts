@@ -21,7 +21,7 @@ export class Client {
     }
   }
 
-  static fromEnv(adapterFactories?: Record<string, (apiKey: string) => ProviderAdapter>): Client {
+  static fromEnv(adapterFactories?: Record<string, (config: Record<string, unknown>) => ProviderAdapter>): Client {
     const detectedConfig = detectProviders();
     const providers: Record<string, ProviderAdapter> = {};
 
@@ -29,10 +29,7 @@ export class Client {
       for (const [providerName, config] of Object.entries(detectedConfig)) {
         const factory = adapterFactories[providerName];
         if (factory && typeof config === 'object' && config !== null && 'apiKey' in config) {
-          const apiKey = config['apiKey'];
-          if (typeof apiKey === 'string') {
-            providers[providerName] = factory(apiKey);
-          }
+          providers[providerName] = factory(config);
         }
       }
     }

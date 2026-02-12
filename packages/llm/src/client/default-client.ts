@@ -4,7 +4,7 @@ import type { ProviderAdapter } from '../types/index.js';
 let defaultClient: Client | null = null;
 
 export function getDefaultClient(
-  adapterFactories?: Record<string, (apiKey: string) => ProviderAdapter>
+  adapterFactories?: Record<string, (config: Record<string, unknown>) => ProviderAdapter>
 ): Client {
   if (defaultClient === null) {
     defaultClient = Client.fromEnv(adapterFactories);

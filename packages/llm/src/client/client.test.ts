@@ -161,7 +161,7 @@ describe('Client', () => {
         providerMetadata: {},
       };
       const adapter = createMockAdapter('openai');
-      (adapter.complete as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+      vi.mocked(adapter.complete).mockResolvedValue(mockResponse);
       const client = new Client({ providers: { openai: adapter } });
 
       const response = await client.complete({ model: 'gpt-4', provider: 'openai' });
@@ -250,8 +250,8 @@ describe('Client', () => {
 
       const client = Client.fromEnv(factories);
 
-      expect(factories.openai).toHaveBeenCalledWith('test-openai-key');
-      expect(factories.anthropic).toHaveBeenCalledWith('test-anthropic-key');
+      expect(factories.openai).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'test-openai-key' }));
+      expect(factories.anthropic).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'test-anthropic-key' }));
       expect(client).toBeDefined();
     });
 
@@ -268,7 +268,7 @@ describe('Client', () => {
 
       const client = Client.fromEnv(factories);
 
-      expect(factories.anthropic).toHaveBeenCalledWith('test-anthropic-key');
+      expect(factories.anthropic).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'test-anthropic-key' }));
       expect(factories.openai).not.toHaveBeenCalled();
       expect(factories.gemini).not.toHaveBeenCalled();
       expect(client).toBeDefined();
@@ -284,7 +284,7 @@ describe('Client', () => {
 
       Client.fromEnv(factories);
 
-      expect(factories.gemini).toHaveBeenCalledWith('test-gemini-key');
+      expect(factories.gemini).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'test-gemini-key' }));
     });
 
     it('should use GOOGLE_API_KEY as alternative for Gemini', () => {
@@ -297,7 +297,7 @@ describe('Client', () => {
 
       Client.fromEnv(factories);
 
-      expect(factories.gemini).toHaveBeenCalledWith('test-google-key');
+      expect(factories.gemini).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'test-google-key' }));
     });
 
     it('should prefer GEMINI_API_KEY over GOOGLE_API_KEY', () => {
@@ -310,7 +310,7 @@ describe('Client', () => {
 
       Client.fromEnv(factories);
 
-      expect(factories.gemini).toHaveBeenCalledWith('test-gemini-key');
+      expect(factories.gemini).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'test-gemini-key' }));
     });
   });
 
@@ -338,7 +338,7 @@ describe('Client', () => {
       const adapter1 = createMockAdapter('openai');
       const adapter2 = createMockAdapter('anthropic');
 
-      (adapter1.close as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('close failed'));
+      vi.mocked(adapter1.close!).mockRejectedValue(new Error('close failed'));
 
       const client = new Client({ providers: { openai: adapter1, anthropic: adapter2 } });
 
@@ -352,7 +352,7 @@ describe('Client', () => {
       const calls: Array<string> = [];
       const adapter = createMockAdapter('openai');
 
-      (adapter.complete as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      vi.mocked(adapter.complete).mockImplementation(async () => {
         calls.push('handler');
         return {
           id: 'response-1',

@@ -1,5 +1,4 @@
-import type { ProviderAdapter } from '../types/index.js';
-import type { Middleware } from '../types/index.js';
+import type { ProviderAdapter, Middleware } from '../types/index.js';
 
 export type ProviderEnvConfig = {
   readonly envVar: string;

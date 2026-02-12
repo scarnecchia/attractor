@@ -23,7 +23,7 @@ describe('executeMiddlewareChain', () => {
 
   describe('request-response flow', () => {
     it('AC2.1: executes two middleware in request-phase order (first to last)', async () => {
-      const log: string[] = [];
+      const log: Array<string> = [];
 
       const mw1: Middleware = (request, next) => {
         log.push('mw1-before');
@@ -68,7 +68,7 @@ describe('executeMiddlewareChain', () => {
     });
 
     it('AC2.2: executes two middleware in response-phase order (last to first)', async () => {
-      const log: string[] = [];
+      const log: Array<string> = [];
 
       const mw1: Middleware = (request, next) => {
         log.push('mw1-before');
@@ -111,7 +111,7 @@ describe('executeMiddlewareChain', () => {
     });
 
     it('AC2.4: three middleware compose correctly in full onion order', async () => {
-      const log: string[] = [];
+      const log: Array<string> = [];
 
       const mw1: Middleware = (request, next) => {
         log.push('mw1-before');
@@ -171,7 +171,7 @@ describe('executeMiddlewareChain', () => {
     });
 
     it('can modify request before calling next', async () => {
-      const capturedRequests: LLMRequest[] = [];
+      const capturedRequests: Array<LLMRequest> = [];
 
       const mw: Middleware = (request, next) => {
         const modifiedRequest: LLMRequest = {
@@ -243,7 +243,7 @@ describe('executeMiddlewareChain', () => {
     }
 
     it('AC2.3: middleware wrapping streaming calls can observe and transform events', async () => {
-      const log: StreamEvent[] = [];
+      const log: Array<StreamEvent> = [];
 
       const mw: Middleware = (request, next) => {
         const iterable = next(request);
@@ -257,7 +257,7 @@ describe('executeMiddlewareChain', () => {
         })();
       };
 
-      const events: StreamEvent[] = [];
+      const events: Array<StreamEvent> = [];
       const result = executeMiddlewareChain([mw], mockRequest, mockStreamHandler);
 
       if (isAsyncIterable(result)) {
@@ -273,8 +273,8 @@ describe('executeMiddlewareChain', () => {
     });
 
     it('multiple middleware can wrap streaming', async () => {
-      const mw1Log: StreamEvent[] = [];
-      const mw2Log: StreamEvent[] = [];
+      const mw1Log: Array<StreamEvent> = [];
+      const mw2Log: Array<StreamEvent> = [];
 
       const mw1: Middleware = (request, next) => {
         const iterable = next(request);
@@ -300,7 +300,7 @@ describe('executeMiddlewareChain', () => {
         })();
       };
 
-      const events: StreamEvent[] = [];
+      const events: Array<StreamEvent> = [];
       const result = executeMiddlewareChain([mw1, mw2], mockRequest, mockStreamHandler);
 
       if (isAsyncIterable(result)) {
