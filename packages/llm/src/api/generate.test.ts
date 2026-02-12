@@ -243,7 +243,7 @@ describe('generate()', () => {
       });
 
       expect(result.toolCalls.length).toBe(1);
-      expect(result.toolCalls[0].toolName).toBe('passive_tool');
+      expect(result.toolCalls[0]?.toolName).toBe('passive_tool');
       expect(result.steps.length).toBe(1);
     });
   });
