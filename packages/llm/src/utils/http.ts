@@ -1,10 +1,11 @@
-import { AbortError, ProviderError } from '../types/error.js';
+import { AbortError } from '../types/error.js';
+import { mapHttpError } from './error-mapping.js';
 import type { TimeoutConfig } from '../types/config.js';
 
 export type FetchOptions = {
   readonly url: string;
   readonly method?: string;
-  readonly headers?: Record<string, string>;
+  readonly headers?: Readonly<Record<string, string>>;
   readonly body?: unknown;
   readonly timeout?: TimeoutConfig;
   readonly signal?: AbortSignal;
@@ -14,6 +15,38 @@ export type FetchResult = {
   readonly response: globalThis.Response;
   readonly body: unknown;
 };
+
+type ExecuteFetchOptions = {
+  readonly url: string;
+  readonly method: string;
+  readonly headers: Record<string, string>;
+  readonly body: string | undefined;
+  readonly signal: AbortSignal;
+};
+
+/**
+ * Executes a fetch request with the given options.
+ * Handles abort and HTTP error responses.
+ */
+async function executeFetch(
+  options: ExecuteFetchOptions,
+): Promise<globalThis.Response> {
+  const { url, method, headers, body, signal } = options;
+
+  try {
+    return await fetch(url, {
+      method,
+      headers,
+      body,
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof globalThis.Error && err.name === 'AbortError') {
+      throw new AbortError('Fetch was aborted');
+    }
+    throw err;
+  }
+}
 
 /**
  * Fetches with timeout support, header merging, and JSON body serialization.
@@ -31,18 +64,15 @@ export async function fetchWithTimeout(
     signal: externalSignal,
   } = options;
 
-  // Check if external signal is already aborted
   if (externalSignal?.aborted) {
     throw new AbortError('Signal was already aborted');
   }
 
-  // Create abort controller for timeout
   const timeoutController = new AbortController();
+  const linkedSignal = externalSignal
+    ? AbortSignal.any([externalSignal, timeoutController.signal])
+    : timeoutController.signal;
 
-  // Link external signal to timeout controller
-  const linkedSignal = linkSignals(externalSignal, timeoutController.signal);
-
-  // Set up timeout if configured
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   if (timeout?.requestMs) {
     timeoutId = setTimeout(() => {
@@ -51,46 +81,32 @@ export async function fetchWithTimeout(
   }
 
   try {
-    // Merge headers
     const mergedHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...customHeaders,
     };
 
-    // Serialize body if provided
     const body = bodyData !== undefined ? JSON.stringify(bodyData) : undefined;
 
-    // Perform fetch
-    let response: globalThis.Response;
-    try {
-      response = await fetch(url, {
-        method,
-        headers: mergedHeaders,
-        body,
-        signal: linkedSignal,
-      });
-    } catch (err) {
-      // Convert native AbortError to SDK AbortError
-      if (err instanceof globalThis.Error && err.name === 'AbortError') {
-        throw new AbortError('Fetch was aborted');
-      }
-      throw err;
-    }
+    const response = await executeFetch({
+      url,
+      method,
+      headers: mergedHeaders,
+      body,
+      signal: linkedSignal,
+    });
 
-    // Check for non-2xx status
     if (!response.ok) {
       const text = await response.text();
-      throw new ProviderError(
-        `HTTP ${response.status}: ${text}`,
-        response.status,
-        false,
-        'unknown',
-        null,
-        text,
-      );
+      throw mapHttpError({
+        statusCode: response.status,
+        body: text,
+        provider: 'unknown',
+        headers: response.headers,
+        raw: text,
+      });
     }
 
-    // Parse JSON body
     const parsedBody = await response.json();
 
     return {
@@ -98,7 +114,6 @@ export async function fetchWithTimeout(
       body: parsedBody,
     };
   } finally {
-    // Clean up timeout
     if (timeoutId !== null) {
       clearTimeout(timeoutId);
     }
@@ -121,18 +136,15 @@ export async function fetchStream(
     signal: externalSignal,
   } = options;
 
-  // Check if external signal is already aborted
   if (externalSignal?.aborted) {
     throw new AbortError('Signal was already aborted');
   }
 
-  // Create abort controller for timeout
   const timeoutController = new AbortController();
+  const linkedSignal = externalSignal
+    ? AbortSignal.any([externalSignal, timeoutController.signal])
+    : timeoutController.signal;
 
-  // Link external signal to timeout controller
-  const linkedSignal = linkSignals(externalSignal, timeoutController.signal);
-
-  // Set up timeout if configured
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   if (timeout?.requestMs) {
     timeoutId = setTimeout(() => {
@@ -141,74 +153,36 @@ export async function fetchStream(
   }
 
   try {
-    // Merge headers
     const mergedHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...customHeaders,
     };
 
-    // Serialize body if provided
     const body = bodyData !== undefined ? JSON.stringify(bodyData) : undefined;
 
-    // Perform fetch
-    let response: globalThis.Response;
-    try {
-      response = await fetch(url, {
-        method,
-        headers: mergedHeaders,
-        body,
-        signal: linkedSignal,
-      });
-    } catch (err) {
-      // Convert native AbortError to SDK AbortError
-      if (err instanceof globalThis.Error && err.name === 'AbortError') {
-        throw new AbortError('Fetch was aborted');
-      }
-      throw err;
-    }
+    const response = await executeFetch({
+      url,
+      method,
+      headers: mergedHeaders,
+      body,
+      signal: linkedSignal,
+    });
 
-    // Check for non-2xx status
     if (!response.ok) {
       const text = await response.text();
-      throw new ProviderError(
-        `HTTP ${response.status}: ${text}`,
-        response.status,
-        false,
-        'unknown',
-        null,
-        text,
-      );
+      throw mapHttpError({
+        statusCode: response.status,
+        body: text,
+        provider: 'unknown',
+        headers: response.headers,
+        raw: text,
+      });
     }
 
     return response;
   } finally {
-    // Clean up timeout
     if (timeoutId !== null) {
       clearTimeout(timeoutId);
     }
   }
-}
-
-/**
- * Links two abort signals so that either one being aborted triggers the target.
- */
-function linkSignals(
-  externalSignal: AbortSignal | undefined,
-  targetSignal: AbortSignal,
-): AbortSignal {
-  if (!externalSignal) {
-    return targetSignal;
-  }
-
-  if (externalSignal.aborted) {
-    return externalSignal;
-  }
-
-  // Create a new controller that aborts when either signal aborts
-  const controller = new AbortController();
-
-  externalSignal.addEventListener('abort', () => controller.abort());
-  targetSignal.addEventListener('abort', () => controller.abort());
-
-  return controller.signal;
 }

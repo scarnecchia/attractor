@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createSSEStream, type SSEEvent } from './sse.js';
 
+type SSEEventArray = Array<SSEEvent>;
+
 /**
  * Creates a mock Response with a ReadableStream body from SSE-formatted strings.
  */
@@ -28,7 +30,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -53,7 +55,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -77,7 +79,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -94,7 +96,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -105,7 +107,7 @@ describe('createSSEStream', () => {
   it('handles default event type when not specified', async () => {
     const response = createMockResponse(['data: test', '', '']);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -132,7 +134,7 @@ describe('createSSEStream', () => {
   it('handles empty data lines', async () => {
     const response = createMockResponse(['data:', '', '']);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -150,7 +152,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -166,7 +168,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -194,7 +196,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -213,7 +215,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }
@@ -232,7 +234,7 @@ describe('createSSEStream', () => {
       '',
     ]);
 
-    const events: SSEEvent[] = [];
+    const events: SSEEventArray = [];
     for await (const event of createSSEStream(response)) {
       events.push(event);
     }

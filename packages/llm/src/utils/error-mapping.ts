@@ -31,9 +31,9 @@ export function parseRetryAfter(headers: Headers): number | null {
     return null;
   }
 
-  // Try parsing as numeric (seconds)
-  const numSeconds = parseInt(retryAfter, 10);
-  if (!isNaN(numSeconds)) {
+  // Try parsing as numeric (seconds) - only if it's a valid integer string
+  if (/^\d+$/.test(retryAfter)) {
+    const numSeconds = Number(retryAfter);
     return numSeconds * 1000;
   }
 

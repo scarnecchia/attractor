@@ -154,7 +154,7 @@ describe('retry function', () => {
   });
 
   it('AC7.1: Jitter is applied - run retry multiple times with same config, delays should vary', async () => {
-    const delays: number[] = [];
+    const delays: Array<number> = [];
 
     // Run 5 times and collect the delays passed to onRetry
     for (let i = 0; i < 5; i++) {

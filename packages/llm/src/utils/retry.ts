@@ -16,6 +16,17 @@ export function calculateBackoff(
   return Math.min(exponentialDelay, maxDelayMs);
 }
 
+/**
+ * Retries a single operation with exponential backoff.
+ *
+ * AC7.5: Callers must wrap individual operations, not multi-step sequences.
+ * Each call to retry() should wrap a single atomic operation. Do not pass a function
+ * that performs multiple sequential steps, as failures in later steps may not be retryable.
+ *
+ * AC7.6: Streaming operations should not use this function after partial data delivery.
+ * Once streaming has begun and partial data has been delivered to the caller,
+ * retrying becomes unsafe. Only wrap the initial fetch/setup, not the streaming loop.
+ */
 export async function retry<T>(
   fn: () => Promise<T>,
   options: RetryOptions,

@@ -54,6 +54,7 @@ describe('http', () => {
         ok: false,
         status: 500,
         text: vi.fn().mockResolvedValue(errorBody),
+        headers: new Headers(),
       };
 
       vi.mocked(globalThis.fetch).mockResolvedValue(
@@ -172,6 +173,7 @@ describe('http', () => {
         ok: false,
         status: 404,
         text: vi.fn().mockResolvedValue(errorBody),
+        headers: new Headers(),
       };
 
       vi.mocked(globalThis.fetch).mockResolvedValue(

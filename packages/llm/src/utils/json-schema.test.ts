@@ -62,14 +62,16 @@ describe('JSON Schema helpers', () => {
       };
       const result = wrapSchemaForOpenAI(schema, 'PersonTool');
 
-      expect((result as any).json_schema.schema).toEqual(schema);
+      const jsonSchema = result['json_schema'] as Record<string, unknown>;
+      expect(jsonSchema['schema']).toEqual(schema);
     });
 
     it('sets strict to true', () => {
       const schema = { type: 'object' };
       const result = wrapSchemaForOpenAI(schema, 'Tool');
 
-      expect((result as any).json_schema.strict).toBe(true);
+      const jsonSchema = result['json_schema'] as Record<string, unknown>;
+      expect(jsonSchema['strict']).toBe(true);
     });
   });
 
