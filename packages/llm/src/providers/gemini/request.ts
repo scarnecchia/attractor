@@ -33,16 +33,17 @@ function buildToolCallIdMap(request: Readonly<LLMRequest>): Map<string, string> 
 export function translateRequest(
   request: Readonly<LLMRequest>,
   apiKey: string,
+  baseUrl: string,
   streaming: boolean,
 ): TranslateRequestResult {
   const model = request.model;
-  const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+  const modelsUrl = `${baseUrl}/v1beta/models`;
 
   let url: string;
   if (streaming) {
-    url = `${baseUrl}/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
+    url = `${modelsUrl}/${model}:streamGenerateContent?key=${apiKey}&alt=sse`;
   } else {
-    url = `${baseUrl}/${model}:generateContent?key=${apiKey}`;
+    url = `${modelsUrl}/${model}:generateContent?key=${apiKey}`;
   }
 
   const headers: Record<string, string> = {

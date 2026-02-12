@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { translateStream } from './stream.js';
 import type { SSEEvent } from '../../utils/sse.js';
+import type { StreamEvent } from '../../types/index.js';
 
 async function* mockSSEStream(events: Array<SSEEvent>): AsyncIterable<SSEEvent> {
   for (const event of events) {
@@ -22,16 +23,16 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }
 
       expect(results).toHaveLength(1);
-      const start = results[0];
-      expect(start.type).toBe('STREAM_START');
-      expect(start.id).toBe('msg-123');
-      expect(start.model).toBe('claude-opus-4-6');
+      const start = results[0] as Record<string, unknown>;
+      expect(start['type']).toBe('STREAM_START');
+      expect(start['id']).toBe('msg-123');
+      expect(start['model']).toBe('claude-opus-4-6');
     });
   });
 
@@ -55,14 +56,14 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }
 
-      const textDelta = results.find((e) => e.type === 'TEXT_DELTA');
+      const textDelta = results.find((e) => e.type === 'TEXT_DELTA') as Record<string, unknown> | undefined;
       expect(textDelta).toBeDefined();
-      expect(textDelta.text).toBe('hello');
+      expect(textDelta!['text']).toBe('hello');
     });
   });
 
@@ -93,22 +94,22 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }
 
-      const startEvent = results.find((e) => e.type === 'TOOL_CALL_START');
+      const startEvent = results.find((e) => e.type === 'TOOL_CALL_START') as Record<string, unknown> | undefined;
       expect(startEvent).toBeDefined();
-      expect(startEvent.toolCallId).toBe('call-123');
-      expect(startEvent.toolName).toBe('get_weather');
+      expect(startEvent!['toolCallId']).toBe('call-123');
+      expect(startEvent!['toolName']).toBe('get_weather');
 
       const deltaEvent = results.find((e) => e.type === 'TOOL_CALL_DELTA');
       expect(deltaEvent).toBeDefined();
 
-      const endEvent = results.find((e) => e.type === 'TOOL_CALL_END');
+      const endEvent = results.find((e) => e.type === 'TOOL_CALL_END') as Record<string, unknown> | undefined;
       expect(endEvent).toBeDefined();
-      expect(endEvent.toolCallId).toBe('call-123');
+      expect(endEvent!['toolCallId']).toBe('call-123');
     });
   });
 
@@ -132,14 +133,14 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }
 
-      const thinkingDelta = results.find((e) => e.type === 'THINKING_DELTA');
+      const thinkingDelta = results.find((e) => e.type === 'THINKING_DELTA') as Record<string, unknown> | undefined;
       expect(thinkingDelta).toBeDefined();
-      expect(thinkingDelta.text).toBe('let me');
+      expect(thinkingDelta!['text']).toBe('let me');
     });
   });
 
@@ -163,15 +164,15 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }
 
-      const finishEvent = results.find((e) => e.type === 'FINISH');
+      const finishEvent = results.find((e) => e.type === 'FINISH') as Record<string, unknown> | undefined;
       expect(finishEvent).toBeDefined();
-      expect(finishEvent.finishReason).toBe('stop');
-      expect(finishEvent.usage.outputTokens).toBe(50);
+      expect(finishEvent!['finishReason']).toBe('stop');
+      expect((finishEvent!['usage'] as Record<string, unknown>)['outputTokens']).toBe(50);
     });
   });
 
@@ -195,21 +196,21 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }
 
-      const finishEvent = results.find((e) => e.type === 'FINISH');
+      const finishEvent = results.find((e) => e.type === 'FINISH') as Record<string, unknown> | undefined;
       expect(finishEvent).toBeDefined();
-      expect(finishEvent.usage.outputTokens).toBe(50);
-      expect(finishEvent.usage.cacheReadTokens).toBe(100);
+      expect((finishEvent!['usage'] as Record<string, unknown>)['outputTokens']).toBe(50);
+      expect((finishEvent!['usage'] as Record<string, unknown>)['cacheReadTokens']).toBe(100);
     });
   });
 
   describe('Edge cases', () => {
     it('should handle empty stream', async () => {
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream([]))) {
         results.push(event);
       }
@@ -225,6 +226,7 @@ describe('Anthropic Stream Translation', () => {
           }),
         },
         {
+          event: "",
           data: 'invalid json {]',
         },
         { event: "message", data: JSON.stringify({
@@ -233,7 +235,7 @@ describe('Anthropic Stream Translation', () => {
         },
       ];
 
-      const results = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(mockSSEStream(events))) {
         results.push(event);
       }

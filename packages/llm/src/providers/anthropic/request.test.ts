@@ -10,7 +10,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.headers['x-api-key']).toBe('test-api-key');
       expect(result.headers['anthropic-version']).toBe('2023-06-01');
@@ -26,7 +26,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.body['system']).toBeDefined();
       const systemArray = result.body['system'] as Array<Record<string, unknown>>;
@@ -41,7 +41,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
@@ -59,7 +59,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'assistant', content: 'response' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
@@ -88,7 +88,7 @@ describe('Anthropic Request Translation', () => {
         ],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
@@ -107,7 +107,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'developer', content: 'system-like message' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
@@ -134,7 +134,7 @@ describe('Anthropic Request Translation', () => {
         ],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
@@ -157,7 +157,7 @@ describe('Anthropic Request Translation', () => {
         },
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.body['metadata']).toEqual({ key: 'value' });
     });
@@ -175,7 +175,7 @@ describe('Anthropic Request Translation', () => {
         },
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.headers['anthropic-beta']).toContain('my-beta-value');
       expect(result.headers['anthropic-beta']).toContain('prompt-caching-2024-07-31');
@@ -189,7 +189,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello world' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
@@ -218,7 +218,7 @@ describe('Anthropic Request Translation', () => {
         ],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
@@ -251,7 +251,7 @@ describe('Anthropic Request Translation', () => {
         ],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
@@ -282,7 +282,7 @@ describe('Anthropic Request Translation', () => {
         ],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
@@ -301,7 +301,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const systemArray = result.body['system'] as Array<Record<string, unknown>>;
       const lastBlock = systemArray[systemArray.length - 1];
@@ -321,7 +321,7 @@ describe('Anthropic Request Translation', () => {
         },
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const systemArray = result.body['system'] as Array<Record<string, unknown>>;
       const lastBlock = systemArray[systemArray.length - 1];
@@ -336,7 +336,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.body['max_tokens']).toBe(4096);
     });
@@ -348,7 +348,7 @@ describe('Anthropic Request Translation', () => {
         maxTokens: 1000,
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.body['max_tokens']).toBe(1000);
     });
@@ -362,7 +362,7 @@ describe('Anthropic Request Translation', () => {
         toolChoice: { mode: 'auto' },
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const toolChoice = result.body['tool_choice'] as Record<string, unknown>;
       expect(toolChoice['type']).toBe('auto');
@@ -375,7 +375,7 @@ describe('Anthropic Request Translation', () => {
         toolChoice: { mode: 'required' },
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const toolChoice = result.body['tool_choice'] as Record<string, unknown>;
       expect(toolChoice['type']).toBe('any');
@@ -388,7 +388,7 @@ describe('Anthropic Request Translation', () => {
         toolChoice: { mode: 'named', toolName: 'my_tool' },
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       const toolChoice = result.body['tool_choice'] as Record<string, unknown>;
       expect(toolChoice['type']).toBe('tool');
@@ -403,7 +403,7 @@ describe('Anthropic Request Translation', () => {
         messages: [{ role: 'user', content: 'hello' }],
       };
 
-      const result = translateRequest(request, 'test-api-key');
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
 
       expect(result.url).toBe('https://api.anthropic.com/v1/messages');
     });

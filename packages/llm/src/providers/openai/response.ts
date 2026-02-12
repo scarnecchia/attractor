@@ -18,6 +18,15 @@ export function translateResponse(raw: Record<string, unknown>): LLMResponse {
             kind: 'TEXT',
             text: msgContent,
           });
+        } else if (Array.isArray(msgContent)) {
+          for (const block of msgContent as Array<Record<string, unknown>>) {
+            if (block['type'] === 'output_text' && typeof block['text'] === 'string') {
+              content.push({
+                kind: 'TEXT',
+                text: block['text'],
+              });
+            }
+          }
         }
       } else if (type === 'function_call') {
         content.push({

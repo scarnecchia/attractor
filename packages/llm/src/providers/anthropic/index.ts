@@ -16,7 +16,7 @@ export class AnthropicAdapter implements ProviderAdapter {
   }
 
   async complete(request: LLMRequest): Promise<LLMResponse> {
-    const { url, headers, body } = translateRequest(request, this.apiKey);
+    const { url, headers, body } = translateRequest(request, this.apiKey, this.baseUrl);
 
     const result = await fetchWithTimeout({
       url,
@@ -31,7 +31,7 @@ export class AnthropicAdapter implements ProviderAdapter {
   }
 
   async* stream(request: LLMRequest): AsyncIterable<StreamEvent> {
-    const { url, headers, body } = translateRequest(request, this.apiKey);
+    const { url, headers, body } = translateRequest(request, this.apiKey, this.baseUrl);
     const bodyWithStream = { ...body, stream: true };
 
     const response = await fetchStream({

@@ -1,4 +1,4 @@
-type ModelInfo = {
+export type ModelInfo = {
   readonly id: string;
   readonly provider: string;
   readonly contextWindow: number;
@@ -139,5 +139,4 @@ const MODEL_CATALOG: ReadonlyArray<ModelInfo> = [
   },
 ];
 
-export type { ModelInfo };
 export { MODEL_CATALOG };

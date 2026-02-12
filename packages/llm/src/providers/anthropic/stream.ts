@@ -2,10 +2,10 @@ import type { SSEEvent } from '../../utils/sse.js';
 import type { StreamEvent, Usage, FinishReason } from '../../types/index.js';
 import { emptyUsage } from '../../types/response.js';
 
-interface ToolCallState {
+type ToolCallState = {
   toolCallId: string;
   toolName: string;
-}
+};
 
 export async function* translateStream(
   sseStream: AsyncIterable<SSEEvent>,

@@ -52,8 +52,9 @@ function translateContent(content: ContentPart): Record<string, unknown> | null 
 export function translateRequest(
   request: Readonly<LLMRequest>,
   apiKey: string,
+  baseUrl: string,
 ): RequestOutput {
-  const url = 'https://api.anthropic.com/v1/messages';
+  const url = `${baseUrl}/v1/messages`;
   const headers: Record<string, string> = {
     'x-api-key': apiKey,
     'anthropic-version': '2023-06-01',
@@ -183,12 +184,17 @@ export function translateRequest(
   }
 
   // Provider options escape hatch
+  let autoCache = true;
   const anthropicOptions = request.providerOptions?.['anthropic'];
   if (anthropicOptions) {
-    const { betaHeaders, autoCache, ...rest } = anthropicOptions as Record<string, unknown> & {
+    const { betaHeaders, autoCache: autoCacheOpt, ...rest } = anthropicOptions as Record<string, unknown> & {
       betaHeaders?: Record<string, string>;
       autoCache?: boolean;
     };
+
+    if (autoCacheOpt === false) {
+      autoCache = false;
+    }
 
     Object.assign(body, rest);
 
@@ -205,8 +211,6 @@ export function translateRequest(
   }
 
   // Cache control injection (default true unless explicitly disabled)
-  const anthropicProviderOpts = request.providerOptions?.['anthropic'] as Record<string, unknown> | undefined;
-  const autoCache = anthropicProviderOpts?.['autoCache'] !== false;
   const bodyWithCache = injectCacheControl(body, autoCache);
   const headersWithBeta = injectBetaHeaders(headers, autoCache);
 

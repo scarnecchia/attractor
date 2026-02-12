@@ -29,7 +29,7 @@ describe('Anthropic Cache Control Injection', () => {
       expect(systemArray).toBeDefined();
       expect(systemArray!.length).toBe(2);
       expect(systemArray![1]).toHaveProperty('cache_control');
-      const cacheControl = systemArray![1]['cache_control'] as Record<string, unknown>;
+      const cacheControl = systemArray![1]!['cache_control'] as Record<string, unknown>;
       expect(cacheControl['type']).toBe('ephemeral');
     });
 
@@ -47,7 +47,7 @@ describe('Anthropic Cache Control Injection', () => {
       expect(toolsArray).toBeDefined();
       expect(toolsArray!.length).toBe(2);
       expect(toolsArray![1]).toHaveProperty('cache_control');
-      const cacheControl = toolsArray![1]['cache_control'] as Record<string, unknown>;
+      const cacheControl = toolsArray![1]!['cache_control'] as Record<string, unknown>;
       expect(cacheControl['type']).toBe('ephemeral');
     });
 
@@ -87,7 +87,7 @@ describe('Anthropic Cache Control Injection', () => {
       expect(contentArray).toBeDefined();
       expect(contentArray!.length).toBe(2);
       expect(contentArray![1]).toHaveProperty('cache_control');
-      const cacheControl = contentArray![1]['cache_control'] as Record<string, unknown>;
+      const cacheControl = contentArray![1]!['cache_control'] as Record<string, unknown>;
       expect(cacheControl['type']).toBe('ephemeral');
     });
 

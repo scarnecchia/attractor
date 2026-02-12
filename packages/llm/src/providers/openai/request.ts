@@ -24,9 +24,10 @@ function translateContent(content: ContentPart): Record<string, unknown> | null 
 export function translateRequest(
   request: Readonly<LLMRequest>,
   apiKey: string,
+  baseUrl: string,
   streaming: boolean = false,
 ): RequestOutput {
-  const url = 'https://api.openai.com/v1/responses';
+  const url = `${baseUrl}/v1/responses`;
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',

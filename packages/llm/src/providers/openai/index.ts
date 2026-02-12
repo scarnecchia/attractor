@@ -16,7 +16,7 @@ export class OpenAIAdapter implements ProviderAdapter {
   }
 
   async complete(request: LLMRequest): Promise<LLMResponse> {
-    const { url, headers, body } = translateRequest(request, this.apiKey, false);
+    const { url, headers, body } = translateRequest(request, this.apiKey, this.baseUrl, false);
 
     const result = await fetchWithTimeout({
       url,
@@ -31,7 +31,7 @@ export class OpenAIAdapter implements ProviderAdapter {
   }
 
   async* stream(request: LLMRequest): AsyncIterable<StreamEvent> {
-    const { url, headers, body } = translateRequest(request, this.apiKey, true);
+    const { url, headers, body } = translateRequest(request, this.apiKey, this.baseUrl, true);
 
     const response = await fetchStream({
       url,

@@ -3,7 +3,7 @@ import { GeminiAdapter } from './index.js';
 import { translateRequest } from './request.js';
 import { translateResponse } from './response.js';
 import { translateStream } from './stream.js';
-import type { LLMRequest } from '../../types/index.js';
+import type { LLMRequest, StreamEvent } from '../../types/index.js';
 import type { SSEEvent } from '../../utils/sse.js';
 
 describe('Gemini Adapter', () => {
@@ -14,7 +14,7 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { url } = translateRequest(request, 'test-key', false);
+      const { url } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
       expect(url).toContain('gemini-2.0-flash:generateContent');
       expect(url).toContain('key=test-key');
@@ -27,7 +27,7 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { url } = translateRequest(request, 'test-key', true);
+      const { url } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', true);
 
       expect(url).toContain('gemini-2.0-flash:streamGenerateContent');
       expect(url).toContain('key=test-key');
@@ -41,9 +41,9 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      expect(body.systemInstruction).toEqual({
+      expect(body['systemInstruction']).toEqual({
         role: 'user',
         parts: [{ text: 'You are helpful' }],
       });
@@ -60,12 +60,12 @@ describe('Gemini Adapter', () => {
         ],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const contents = body.contents as Array<Record<string, unknown>>;
+      const contents = body['contents'] as Array<Record<string, unknown>>;
       expect(contents).toHaveLength(1);
-      expect(contents[0]?.role).toBe('user');
-      expect(contents[0]?.parts).toEqual([{ text: 'hello' }]);
+      expect(contents[0]?.['role']).toBe('user');
+      expect(contents[0]?.['parts']).toEqual([{ text: 'hello' }]);
     });
 
     it('should translate assistant message to model role (AC3.5)', () => {
@@ -79,10 +79,10 @@ describe('Gemini Adapter', () => {
         ],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const contents = body.contents as Array<Record<string, unknown>>;
-      expect(contents[0]?.role).toBe('model');
+      const contents = body['contents'] as Array<Record<string, unknown>>;
+      expect(contents[0]?.['role']).toBe('model');
     });
 
     it('should translate tool result to user message with functionResponse (AC3.5)', () => {
@@ -120,9 +120,9 @@ describe('Gemini Adapter', () => {
         ],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const contents = body.contents as Array<Record<string, unknown>>;
+      const contents = body['contents'] as Array<Record<string, unknown>>;
       // Should have user, then tool result (assistant tool call is skipped)
       expect(contents).toHaveLength(2);
       // First is user message
@@ -157,11 +157,11 @@ describe('Gemini Adapter', () => {
         ],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const contents = body.contents as Array<Record<string, unknown>>;
-      const parts = contents[0]?.parts as Array<Record<string, unknown>>;
-      expect(parts[1]?.inlineData).toEqual({
+      const contents = body['contents'] as Array<Record<string, unknown>>;
+      const parts = contents[0]?.['parts'] as Array<Record<string, unknown>>;
+      expect(parts[1]?.['inlineData']).toEqual({
         mimeType: 'image/png',
         data: 'iVBORw0KGgo=',
       });
@@ -185,11 +185,11 @@ describe('Gemini Adapter', () => {
         ],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const contents = body.contents as Array<Record<string, unknown>>;
-      const parts = contents[0]?.parts as Array<Record<string, unknown>>;
-      expect(parts[0]?.fileData).toEqual({
+      const contents = body['contents'] as Array<Record<string, unknown>>;
+      const parts = contents[0]?.['parts'] as Array<Record<string, unknown>>;
+      expect(parts[0]?.['fileData']).toEqual({
         mimeType: 'image/jpeg',
         fileUri: 'https://example.com/img.jpg',
       });
@@ -211,12 +211,12 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const tools = body.tools as Array<Record<string, unknown>>;
+      const tools = body['tools'] as Array<Record<string, unknown>>;
       expect(tools).toHaveLength(1);
-      const decls = tools[0]?.function_declarations as Array<Record<string, unknown>>;
-      expect(decls[0]?.name).toBe('get_weather');
+      const decls = tools[0]?.['function_declarations'] as Array<Record<string, unknown>>;
+      expect(decls[0]?.['name']).toBe('get_weather');
     });
 
     it('should translate toolChoice auto to AUTO mode', () => {
@@ -227,9 +227,9 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const toolConfig = body.toolConfig as Record<string, unknown>;
+      const toolConfig = body['toolConfig'] as Record<string, unknown>;
       const fcc = toolConfig['functionCallingConfig'] as Record<string, unknown>;
       expect(fcc['mode']).toBe('AUTO');
     });
@@ -242,9 +242,9 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const toolConfig = body.toolConfig as Record<string, unknown>;
+      const toolConfig = body['toolConfig'] as Record<string, unknown>;
       const fcc = toolConfig['functionCallingConfig'] as Record<string, unknown>;
       expect(fcc['mode']).toBe('NONE');
     });
@@ -257,9 +257,9 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const toolConfig = body.toolConfig as Record<string, unknown>;
+      const toolConfig = body['toolConfig'] as Record<string, unknown>;
       const fcc = toolConfig['functionCallingConfig'] as Record<string, unknown>;
       expect(fcc['mode']).toBe('ANY');
     });
@@ -272,9 +272,9 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const toolConfig = body.toolConfig as Record<string, unknown>;
+      const toolConfig = body['toolConfig'] as Record<string, unknown>;
       const fcc = toolConfig['functionCallingConfig'] as Record<string, unknown>;
       expect(fcc['mode']).toBe('ANY');
       expect(fcc['allowedFunctionNames']).toEqual(['get_weather']);
@@ -287,10 +287,10 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const genConfig = body.generationConfig as Record<string, unknown>;
-      expect(genConfig.maxOutputTokens).toBe(1000);
+      const genConfig = body['generationConfig'] as Record<string, unknown>;
+      expect(genConfig['maxOutputTokens']).toBe(1000);
     });
 
     it('should include generation config with temperature and topP', () => {
@@ -301,11 +301,11 @@ describe('Gemini Adapter', () => {
         messages: [],
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      const genConfig = body.generationConfig as Record<string, unknown>;
-      expect(genConfig.temperature).toBe(0.7);
-      expect(genConfig.topP).toBe(0.9);
+      const genConfig = body['generationConfig'] as Record<string, unknown>;
+      expect(genConfig['temperature']).toBe(0.7);
+      expect(genConfig['topP']).toBe(0.9);
     });
 
     it('should spread providerOptions.gemini into body (AC3.6)', () => {
@@ -319,9 +319,9 @@ describe('Gemini Adapter', () => {
         },
       };
 
-      const { body } = translateRequest(request, 'test-key', false);
+      const { body } = translateRequest(request, 'test-key', 'https://generativelanguage.googleapis.com', false);
 
-      expect(body.candidateCount).toBe(1);
+      expect(body['candidateCount']).toBe(1);
     });
   });
 
@@ -369,7 +369,7 @@ describe('Gemini Adapter', () => {
       const result = translateResponse(raw as Record<string, unknown>, new Map());
 
       expect(result.content).toHaveLength(1);
-      const text = result.content[0];
+      const text = result.content[0] as Record<string, unknown>;
       expect(text['kind']).toBe('TEXT');
       expect(text['text']).toBe('hello world');
     });
@@ -403,7 +403,7 @@ describe('Gemini Adapter', () => {
       const result = translateResponse(raw as Record<string, unknown>, toolCallIdMap);
 
       expect(result.content).toHaveLength(1);
-      const toolCall = result.content[0];
+      const toolCall = result.content[0] as Record<string, unknown>;
       expect(toolCall['kind']).toBe('TOOL_CALL');
       expect(toolCall['toolCallId']).toBeTruthy();
       expect(toolCall['toolName']).toBe('get_weather');
@@ -526,13 +526,13 @@ describe('Gemini Adapter', () => {
         }
       })();
 
-      const results: Array<any> = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(asyncIterable, new Map())) {
         results.push(event);
       }
 
       expect(results[0]?.['type']).toBe('STREAM_START');
-      expect(results[0]?.['model']).toBe('gemini-2.0-flash');
+      expect((results[0] as Record<string, unknown>)?.['model']).toBe('gemini-2.0-flash');
     });
 
     it('should emit TEXT_DELTA for text content', async () => {
@@ -556,12 +556,12 @@ describe('Gemini Adapter', () => {
         }
       })();
 
-      const results: Array<any> = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(asyncIterable, new Map())) {
         results.push(event);
       }
 
-      expect(results.some((e: any) => e['type'] === 'TEXT_DELTA' && e['text'] === 'hello')).toBe(true);
+      expect(results.some((e) => e['type'] === 'TEXT_DELTA' && e['text'] === 'hello')).toBe(true);
     });
 
     it('should emit TOOL_CALL_START and TOOL_CALL_END for function calls', async () => {
@@ -594,13 +594,13 @@ describe('Gemini Adapter', () => {
         }
       })();
 
-      const results: Array<any> = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(asyncIterable, new Map())) {
         results.push(event);
       }
 
-      const hasStart = results.some((e: any) => e['type'] === 'TOOL_CALL_START' && e['toolName'] === 'get_weather');
-      const hasEnd = results.some((e: any) => e['type'] === 'TOOL_CALL_END');
+      const hasStart = results.some((e) => e['type'] === 'TOOL_CALL_START' && e['toolName'] === 'get_weather');
+      const hasEnd = results.some((e) => e['type'] === 'TOOL_CALL_END');
       expect(hasStart).toBe(true);
       expect(hasEnd).toBe(true);
     });
@@ -632,15 +632,16 @@ describe('Gemini Adapter', () => {
         }
       })();
 
-      const results: Array<any> = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(asyncIterable, new Map())) {
         results.push(event);
       }
 
-      const finishEvent = results.find((e: any) => e['type'] === 'FINISH');
+      const finishEvent = results.find((e) => e['type'] === 'FINISH');
       expect(finishEvent).toBeTruthy();
       expect(finishEvent?.['finishReason']).toBe('stop');
-      expect(finishEvent?.['usage']['inputTokens']).toBe(10);
+      expect((finishEvent as Record<string, unknown>)?.['usage']).toBeTruthy();
+      expect(((finishEvent as Record<string, unknown>)?.['usage'] as Record<string, unknown>)?.['inputTokens']).toBe(10);
     });
 
     it('should ignore [DONE] sentinel', async () => {
@@ -674,23 +675,19 @@ describe('Gemini Adapter', () => {
         }
       })();
 
-      const results: Array<any> = [];
+      const results: Array<StreamEvent> = [];
       for await (const event of translateStream(asyncIterable, new Map())) {
         results.push(event);
       }
 
       // Should have STREAM_START, TEXT_DELTA, FINISH, no error from [DONE]
-      expect(results.some((e: any) => e['type'] === 'FINISH')).toBe(true);
+      expect(results.some((e) => e['type'] === 'FINISH')).toBe(true);
     });
   });
 
   describe('GeminiAdapter class', () => {
-    let fetchSpy: any;
-    let fetchStreamSpy: any;
-
     beforeEach(() => {
-      fetchSpy = vi.spyOn(globalThis, 'fetch' as any);
-      fetchStreamSpy = vi.fn();
+      vi.stubGlobal('fetch', vi.fn());
     });
 
     afterEach(() => {
@@ -705,8 +702,7 @@ describe('Gemini Adapter', () => {
     it('should call complete with correct flow', async () => {
       const adapter = new GeminiAdapter('test-key');
 
-      // Mock fetch response
-      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
         ok: true,
         status: 200,
         json: async () => ({
@@ -725,7 +721,7 @@ describe('Gemini Adapter', () => {
         }),
         text: async () => '',
         headers: new Headers(),
-      } as any);
+      } as Response);
 
       const request: LLMRequest = {
         model: 'gemini-2.0-flash',
