@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Client, LLMResponse, ContentPart, Tool, Message } from '../index.js';
 import { generate, type GenerateResult, type GenerateOptions } from './generate.js';
-import { ValidationError, AbortError, emptyUsage } from '../types/index.js';
+import { ValidationError, AbortError, emptyUsage, ServerError } from '../types/index.js';
 import { setDefaultClient, resetDefaultClient } from '../client/default-client.js';
 
 function createMockClient(
@@ -881,6 +881,111 @@ describe('generate()', () => {
 
       const complete = vi.mocked(mockClient.complete);
       expect(complete).toHaveBeenCalled();
+    });
+  });
+
+  describe('AC7.5: Per-step retry in tool loop', () => {
+    it('should retry individual steps and preserve prior step results', async () => {
+      const toolExecuted = vi.fn().mockResolvedValue('tool result');
+
+      const mockResponses: Array<LLMResponse> = [
+        {
+          id: 'response-1',
+          model: 'test-model',
+          content: [
+            {
+              kind: 'TOOL_CALL',
+              toolCallId: 'call-1',
+              toolName: 'test_tool',
+              args: { step: 1 },
+            },
+          ],
+          finishReason: 'tool_calls' as const,
+          usage: emptyUsage(),
+          rateLimitInfo: null,
+          warnings: [],
+          steps: [],
+          providerMetadata: {},
+        },
+        new ServerError('Transient server error', 500, 'test'),
+        {
+          id: 'response-2',
+          model: 'test-model',
+          content: [
+            {
+              kind: 'TOOL_CALL',
+              toolCallId: 'call-2',
+              toolName: 'test_tool',
+              args: { step: 2 },
+            },
+          ],
+          finishReason: 'tool_calls' as const,
+          usage: emptyUsage(),
+          rateLimitInfo: null,
+          warnings: [],
+          steps: [],
+          providerMetadata: {},
+        },
+        {
+          id: 'response-3',
+          model: 'test-model',
+          content: [{ kind: 'TEXT', text: 'Final result' }],
+          finishReason: 'stop' as const,
+          usage: emptyUsage(),
+          rateLimitInfo: null,
+          warnings: [],
+          steps: [],
+          providerMetadata: {},
+        },
+      ];
+
+      let responseIndex = 0;
+      const mockClient = {
+        name: 'test',
+        complete: vi.fn(async () => {
+          const response = mockResponses[responseIndex];
+          responseIndex += 1;
+
+          if (response instanceof ServerError) {
+            throw response;
+          }
+          return response as LLMResponse;
+        }),
+        stream: vi.fn(),
+        close: vi.fn(),
+      } as unknown as Client;
+
+      const tools: Array<Tool> = [
+        {
+          name: 'test_tool',
+          description: 'A test tool',
+          parameters: {},
+          execute: toolExecuted,
+        },
+      ];
+
+      const result = await generate({
+        model: 'test-model',
+        prompt: 'hello',
+        client: mockClient,
+        tools,
+      });
+
+      expect(result.text).toBe('Final result');
+      expect(result.steps.length).toBe(3);
+
+      expect(result.steps[0]?.toolCalls).toHaveLength(1);
+      expect(result.steps[0]?.toolCalls[0]?.args).toEqual({ step: 1 });
+
+      expect(result.steps[1]?.toolCalls).toHaveLength(1);
+      expect(result.steps[1]?.toolCalls[0]?.args).toEqual({ step: 2 });
+
+      expect(toolExecuted).toHaveBeenCalledTimes(2);
+      expect(toolExecuted).toHaveBeenNthCalledWith(1, { step: 1 });
+      expect(toolExecuted).toHaveBeenNthCalledWith(2, { step: 2 });
+
+      const complete = vi.mocked(mockClient.complete);
+      expect(complete).toHaveBeenCalledTimes(4);
     });
   });
 });

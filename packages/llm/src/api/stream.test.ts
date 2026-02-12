@@ -6,7 +6,7 @@ import type {
   Tool,
 } from '../index.js';
 import { stream, StreamAccumulator, type StreamOptions } from './stream.js';
-import { emptyUsage, AbortError } from '../types/index.js';
+import { emptyUsage, AbortError, ServerError } from '../types/index.js';
 import { resetDefaultClient } from '../client/default-client.js';
 
 function createMockClient(
@@ -581,6 +581,65 @@ describe('stream()', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(AbortError);
       }
+    });
+  });
+
+  describe('AC7.6: Streaming does not retry after partial data', () => {
+    it('should not retry stream after yielding partial TEXT_DELTA then failing', async () => {
+      let streamCallCount = 0;
+
+      async function* partialStream(): AsyncGenerator<StreamEvent> {
+        streamCallCount += 1;
+
+        yield {
+          type: 'STREAM_START',
+          id: 'test-1',
+          model: 'test-model',
+        };
+
+        yield {
+          type: 'TEXT_DELTA',
+          text: 'Partial ',
+        };
+
+        yield {
+          type: 'TEXT_DELTA',
+          text: 'response',
+        };
+
+        throw new ServerError('Transient server error', 500, 'test');
+      }
+
+      const mockClient = {
+        name: 'test',
+        complete: vi.fn(),
+        stream: vi.fn(partialStream),
+        close: vi.fn(),
+      } as unknown as Client;
+
+      const result = stream({
+        model: 'test-model',
+        prompt: 'test',
+        client: mockClient,
+      });
+
+      let collectedText = '';
+      let errorThrown = false;
+
+      try {
+        for await (const event of result.stream) {
+          if (event.type === 'TEXT_DELTA') {
+            collectedText += event.text;
+          }
+        }
+      } catch (error) {
+        errorThrown = true;
+        expect(error).toBeInstanceOf(ServerError);
+      }
+
+      expect(errorThrown).toBe(true);
+      expect(collectedText).toBe('Partial response');
+      expect(streamCallCount).toBe(1);
     });
   });
 });

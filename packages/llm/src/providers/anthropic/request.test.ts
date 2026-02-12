@@ -408,4 +408,78 @@ describe('Anthropic Request Translation', () => {
       expect(result.url).toBe('https://api.anthropic.com/v1/messages');
     });
   });
+
+  describe('AC9.4 - Thinking block signature round-trip', () => {
+    it('should translate thinking content with signature', () => {
+      const request: LLMRequest = {
+        model: 'claude-opus-4-6',
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              {
+                kind: 'THINKING',
+                text: 'Let me analyze this problem step by step',
+                signature: 'abc123def456',
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
+
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
+      expect(messagesArray).toHaveLength(1);
+      const msg = messagesArray[0]!;
+      expect(msg['role']).toBe('assistant');
+
+      const content = msg['content'] as Array<Record<string, unknown>>;
+      expect(content).toHaveLength(1);
+      expect(content[0]!['type']).toBe('thinking');
+      expect(content[0]!['thinking']).toBe('Let me analyze this problem step by step');
+      expect(content[0]!['signature']).toBe('abc123def456');
+    });
+
+    it('should handle thinking content without signature', () => {
+      const request: LLMRequest = {
+        model: 'claude-opus-4-6',
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              {
+                kind: 'THINKING',
+                text: 'Analysis',
+                signature: null,
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
+
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
+      const msg = messagesArray[0]!;
+      const content = msg['content'] as Array<Record<string, unknown>>;
+      expect(content[0]!['type']).toBe('thinking');
+      expect(content[0]!['thinking']).toBe('Analysis');
+      expect(content[0]!['signature']).toBeNull();
+    });
+  });
+
+  describe('AC10.9 - Anthropic none toolChoice mode', () => {
+    it('should not set tool_choice when mode is none', () => {
+      const request: LLMRequest = {
+        model: 'claude-opus-4-6',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'none' },
+      };
+
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
+
+      expect(result.body['tool_choice']).toBeUndefined();
+    });
+  });
 });

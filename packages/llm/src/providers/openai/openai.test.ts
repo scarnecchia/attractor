@@ -481,6 +481,114 @@ describe('OpenAI Adapter', () => {
     });
   });
 
+  describe('AC10.9 - Tool choice translation', () => {
+    it('should translate toolChoice mode=auto to "auto" string', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const request: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'auto' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBe('auto');
+    });
+
+    it('should translate toolChoice mode=none to "none" string', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const request: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'none' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBe('none');
+    });
+
+    it('should translate toolChoice mode=required to "required" string', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const request: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'required' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBe('required');
+    });
+
+    it('should translate toolChoice mode=named with function object', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const request: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'named', toolName: 'my_tool' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBeDefined();
+      expect((body.tool_choice as Record<string, unknown>).type).toBe('function');
+      expect(((body.tool_choice as Record<string, unknown>).function as Record<string, unknown>).name).toBe('my_tool');
+    });
+  });
+
   describe('Stream handling', () => {
     it('should stream text deltas', async () => {
       const adapter = new OpenAIAdapter('test-key');

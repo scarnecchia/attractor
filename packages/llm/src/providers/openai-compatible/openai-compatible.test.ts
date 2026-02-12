@@ -413,4 +413,129 @@ describe('OpenAI-Compatible Adapter', () => {
       expect(results[results.length - 1]?.type).toBe('FINISH');
     });
   });
+
+  describe('AC10.9 - Tool choice translation (OpenAI-compatible)', () => {
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function getCallBody() {
+      const calls = fetchMock.mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const call = calls[0];
+      expect(call).toBeDefined();
+      const bodyStr = (call?.[1] as any)?.body;
+      expect(bodyStr).toBeDefined();
+      return JSON.parse(bodyStr as string);
+    }
+
+    it('should translate toolChoice mode=auto to "auto"', async () => {
+      const adapter = new OpenAICompatibleAdapter('test-key', 'https://api.example.com');
+      const request: LLMRequest = {
+        model: 'my-model',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'auto' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'chatcmpl-123',
+          model: 'my-model',
+          choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBe('auto');
+    });
+
+    it('should translate toolChoice mode=none to "none"', async () => {
+      const adapter = new OpenAICompatibleAdapter('test-key', 'https://api.example.com');
+      const request: LLMRequest = {
+        model: 'my-model',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'none' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'chatcmpl-123',
+          model: 'my-model',
+          choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBe('none');
+    });
+
+    it('should translate toolChoice mode=required to "required"', async () => {
+      const adapter = new OpenAICompatibleAdapter('test-key', 'https://api.example.com');
+      const request: LLMRequest = {
+        model: 'my-model',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'required' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'chatcmpl-123',
+          model: 'my-model',
+          choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBe('required');
+    });
+
+    it('should translate toolChoice mode=named with function object', async () => {
+      const adapter = new OpenAICompatibleAdapter('test-key', 'https://api.example.com');
+      const request: LLMRequest = {
+        model: 'my-model',
+        messages: [{ role: 'user', content: 'hello' }],
+        toolChoice: { mode: 'named', toolName: 'my_tool' },
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'chatcmpl-123',
+          model: 'my-model',
+          choices: [{ message: { role: 'assistant', content: 'hi' }, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.tool_choice).toBeDefined();
+      expect((body.tool_choice as Record<string, unknown>).type).toBe('function');
+      expect(((body.tool_choice as Record<string, unknown>).function as Record<string, unknown>).name).toBe('my_tool');
+    });
+  });
 });
