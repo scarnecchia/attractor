@@ -1,10 +1,11 @@
-import type { LLMRequest, LLMResponse, ContentPart, ToolCall, ToolResult, Message } from '../types/index.js';
+import type { LLMRequest, LLMResponse, ContentPart, ToolCall, ToolResult, Message, StepResult, Usage } from '../types/index.js';
 import { ValidationError, emptyUsage, usageAdd, userMessage } from '../types/index.js';
 import type { Client } from '../client/index.js';
 import { getDefaultClient } from '../client/default-client.js';
 import { retry } from '../utils/retry.js';
 import { resolveImageContent } from '../utils/image.js';
-import type { RetryPolicy } from '../types/config.js';
+import { DEFAULT_RETRY_POLICY } from './constants.js';
+import { executeTools } from './tool-execution.js';
 
 export type GenerateOptions = LLMRequest & {
   readonly client?: Client;
@@ -17,25 +18,6 @@ export type GenerateResult = {
   readonly text: string;
   readonly toolCalls: ReadonlyArray<ToolCall>;
 };
-
-type StepResult = {
-  readonly response: LLMResponse;
-  readonly toolCalls: ReadonlyArray<ToolCall>;
-  readonly toolResults: ReadonlyArray<ToolResult>;
-  readonly usage: Usage;
-};
-
-type Usage = {
-  readonly inputTokens: number;
-  readonly outputTokens: number;
-  readonly totalTokens: number;
-  readonly reasoningTokens: number;
-  readonly cacheReadTokens: number;
-  readonly cacheWriteTokens: number;
-};
-
-// Re-export for consumers
-export type { StepResult };
 
 /**
  * Generate a response from the LLM using the provided options.
@@ -110,17 +92,9 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
     };
 
     // Call client.complete with retry
-    const policy: RetryPolicy = {
-      maxRetries: 3,
-      initialDelayMs: 100,
-      maxDelayMs: 10000,
-      backoffMultiplier: 2,
-      retryableStatusCodes: [408, 429, 500, 502, 503, 504],
-    };
-
     const response = await retry(
       () => client.complete(request),
-      { policy },
+      { policy: DEFAULT_RETRY_POLICY },
     );
 
     // Extract tool calls and results from response
@@ -180,7 +154,7 @@ export async function generate(options: GenerateOptions): Promise<GenerateResult
             toolCallId: tr.toolCallId,
             content: tr.content,
             isError: tr.isError,
-          } as ContentPart,
+          },
         ],
       }));
 
@@ -243,66 +217,3 @@ function extractToolCalls(content: ReadonlyArray<ContentPart>): Array<ToolCall> 
     .filter((tc): tc is ToolCall => tc !== null);
 }
 
-async function executeTools(
-  toolCalls: ReadonlyArray<ToolCall>,
-  tools: ReadonlyArray<{ readonly name: string; readonly parameters?: Record<string, unknown>; readonly execute?: (args: Record<string, unknown>) => Promise<string> }>,
-): Promise<Array<ToolResult>> {
-  // Execute all tool calls in parallel using Promise.allSettled
-  const toolMap = new Map(tools.map((t) => [t.name, t]));
-
-  const results = await Promise.allSettled(
-    toolCalls.map(async (toolCall) => {
-      const tool = toolMap.get(toolCall.toolName);
-
-      // Unknown tool (AC10.8)
-      if (!tool) {
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: `Unknown tool: ${toolCall.toolName}`,
-          isError: true,
-        };
-      }
-
-      // Tool not active (no execute function) - this shouldn't happen in generate() context
-      // but handling for safety
-      if (!tool.execute) {
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: `Tool ${toolCall.toolName} does not support execution`,
-          isError: true,
-        };
-      }
-
-      try {
-        // Execute tool (AC10.7)
-        const result = await tool.execute(toolCall.args);
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: result,
-          isError: false,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: message,
-          isError: true,
-        };
-      }
-    }),
-  );
-
-  // Convert settled promises to tool results
-  return results.map((result, index) => {
-    if (result.status === 'fulfilled') {
-      return result.value;
-    } else {
-      const toolCall = toolCalls[index];
-      return {
-        toolCallId: toolCall?.toolCallId ?? '',
-        content: result.reason instanceof Error ? result.reason.message : String(result.reason),
-        isError: true,
-      };
-    }
-  });
-}

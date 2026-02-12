@@ -4,18 +4,18 @@ import type {
   StreamEvent,
   ContentPart,
   ToolCall,
-  ToolResult,
   Message,
   Usage,
   FinishReason,
   StepFinish,
 } from '../types/index.js';
-import { emptyUsage, usageAdd, userMessage } from '../types/index.js';
+import { emptyUsage, userMessage } from '../types/index.js';
 import type { Client } from '../client/index.js';
 import { getDefaultClient } from '../client/default-client.js';
 import { resolveImageContent } from '../utils/image.js';
 import { retry } from '../utils/retry.js';
-import type { RetryPolicy } from '../types/config.js';
+import { DEFAULT_RETRY_POLICY } from './constants.js';
+import { executeTools } from './tool-execution.js';
 
 export type StreamOptions = LLMRequest & {
   readonly client?: Client;
@@ -93,6 +93,30 @@ export class StreamAccumulator {
   }
 
   /**
+   * Get accumulated tool calls.
+   */
+  getToolCalls(): Array<ToolCall> {
+    const toolCalls: Array<ToolCall> = [];
+    for (const [toolCallId, toolCall] of this.toolCalls) {
+      let args: Record<string, unknown> = {};
+      const argsJson = toolCall.argsParts.join('');
+      if (argsJson) {
+        try {
+          args = JSON.parse(argsJson) as Record<string, unknown>;
+        } catch {
+          // If JSON parsing fails, keep empty args
+        }
+      }
+      toolCalls.push({
+        toolCallId,
+        toolName: toolCall.toolName,
+        args,
+      });
+    }
+    return toolCalls;
+  }
+
+  /**
    * Build a Response object from accumulated events.
    * Equivalent to what complete() would return.
    */
@@ -153,16 +177,25 @@ export class StreamAccumulator {
 /**
  * Stream from the LLM with automatic tool execution.
  * Yields StreamEvent objects. Use response() to get final Response.
+ *
+ * Design:
+ * - The main stream (from createMainStream) populates eventBuffer as events flow
+ * - Both stream and textStream consume the same generator instance
+ * - Only one should be consumed - attempting to consume both would be redundant
+ * - response() waits for the stream to complete, then builds response from buffer
+ * - If neither stream nor textStream are consumed, response() will trigger consumption
  */
 export function stream(options: StreamOptions): StreamResult {
   const client = options.client ?? getDefaultClient();
 
-  // Capture all events in a buffer so they can be accessed by both stream and response()
+  // Buffer all events for response() to use
   const eventBuffer: Array<StreamEvent> = [];
-  let streamCreated = false;
-  let responsePromiseResolved: Promise<LLMResponse> | null = null;
 
-  async function* createStream(): AsyncGenerator<StreamEvent> {
+  // Track consumption
+  let consumptionStarted = false;
+  let consumptionPromise: Promise<void> | null = null;
+
+  async function* createMainStream(): AsyncGenerator<StreamEvent> {
     // Input validation
     if (options.prompt && options.messages) {
       throw new Error('Cannot specify both prompt and messages');
@@ -220,50 +253,24 @@ export function stream(options: StreamOptions): StreamResult {
         providerOptions: options.providerOptions,
       };
 
-      // Set up retry policy
-      const policy: RetryPolicy = {
-        maxRetries: 3,
-        initialDelayMs: 100,
-        maxDelayMs: 10000,
-        backoffMultiplier: 2,
-        retryableStatusCodes: [408, 429, 500, 502, 503, 504],
-      };
-
       // Stream events with accumulation
       const accumulator = new StreamAccumulator();
-      const toolCalls: Array<ToolCall> = [];
 
-      // Stream with retry
-      for await (const event of retryStream(
-        () => client.stream(request),
-        { policy },
-      )) {
+      // Retry only the stream creation (client.stream call), not the iteration
+      const streamGenerator = await retry(
+        () => Promise.resolve(client.stream(request)),
+        { policy: DEFAULT_RETRY_POLICY },
+      );
+
+      // Iterate through stream events
+      for await (const event of streamGenerator) {
         accumulator.process(event);
         eventBuffer.push(event);
-
-        // Collect tool calls from TOOL_CALL_END events
-        if (event.type === 'TOOL_CALL_END') {
-          const toolCall = accumulator['toolCalls']?.get(event.toolCallId);
-          if (toolCall) {
-            let args: Record<string, unknown> = {};
-            const argsJson = toolCall.argsParts.join('');
-            if (argsJson) {
-              try {
-                args = JSON.parse(argsJson) as Record<string, unknown>;
-              } catch {
-                // Keep empty args if parsing fails
-              }
-            }
-            toolCalls.push({
-              toolCallId: event.toolCallId,
-              toolName: toolCall.toolName,
-              args,
-            });
-          }
-        }
-
         yield event;
       }
+
+      // Get tool calls from accumulator
+      const toolCalls = accumulator.getToolCalls();
 
       // Check if we should execute tools
       const hasActiveTool = options.tools?.some((t) => t.execute);
@@ -312,7 +319,7 @@ export function stream(options: StreamOptions): StreamResult {
               toolCallId: tr.toolCallId,
               content: tr.content,
               isError: tr.isError,
-            } as ContentPart,
+            },
           ],
         }));
 
@@ -331,163 +338,57 @@ export function stream(options: StreamOptions): StreamResult {
     }
   }
 
-  // Create the stream
-  const streamIterable = createStream();
+  // Create the main stream generator instance (can only be consumed once)
+  const mainStream = createMainStream();
 
-  // Create text-only stream
-  async function* textStream(): AsyncIterable<string> {
-    for await (const event of streamIterable) {
+  // Helper to ensure main stream is fully consumed
+  const ensureMainStreamConsumed = async (): Promise<void> => {
+    if (!consumptionPromise) {
+      consumptionPromise = (async () => {
+        consumptionStarted = true;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        for await (const _event of mainStream) {
+          // Consume all events - they populate eventBuffer
+        }
+      })();
+    }
+    await consumptionPromise;
+  };
+
+  // Create two separate async generators that delegate to the same mainStream
+  // Users should consume EITHER stream OR textStream, not both
+  async function* streamIterator(): AsyncGenerator<StreamEvent> {
+    consumptionStarted = true;
+    for await (const event of mainStream) {
+      yield event;
+    }
+  }
+
+  async function* textStreamIterator(): AsyncIterable<string> {
+    consumptionStarted = true;
+    for await (const event of mainStream) {
       if (event.type === 'TEXT_DELTA') {
         yield event.text;
       }
     }
   }
 
+  // response() waits for main stream to complete, then builds response from buffer
   const getResponse = async (): Promise<LLMResponse> => {
-    if (!responsePromiseResolved) {
-      responsePromiseResolved = (async () => {
-        // If stream hasn't been consumed yet, consume it first to build event buffer
-        if (!streamCreated) {
-          streamCreated = true;
-          for await (const _event of streamIterable) {
-            // just consume
-          }
-        }
+    await ensureMainStreamConsumed();
 
-        // Now build response from buffered events
-        const accumulator = new StreamAccumulator();
-        for (const event of eventBuffer) {
-          accumulator.process(event);
-        }
-        return accumulator.toResponse();
-      })();
+    // Build response from buffered events
+    const accumulator = new StreamAccumulator();
+    for (const event of eventBuffer) {
+      accumulator.process(event);
     }
-    return responsePromiseResolved;
+    return accumulator.toResponse();
   };
 
   return {
-    stream: (() => {
-      streamCreated = true;
-      return streamIterable;
-    })(),
+    stream: streamIterator(),
     response: getResponse,
-    textStream: textStream(),
+    textStream: textStreamIterator(),
   };
 }
 
-/**
- * Helper to retry an async iterable stream.
- * Implements retry logic for stream operations.
- */
-async function* retryStream<T>(
-  generator: () => AsyncIterable<T>,
-  options: { readonly policy?: RetryPolicy },
-): AsyncIterable<T> {
-  const policy = options.policy ?? {
-    maxRetries: 3,
-    initialDelayMs: 100,
-    maxDelayMs: 10000,
-    backoffMultiplier: 2,
-    retryableStatusCodes: [408, 429, 500, 502, 503, 504],
-  };
-
-  let lastError: Error | null = null;
-  let delay = policy.initialDelayMs;
-
-  for (let attempt = 0; attempt <= policy.maxRetries; attempt++) {
-    try {
-      for await (const event of generator()) {
-        yield event;
-      }
-      return;
-    } catch (error) {
-      lastError = error as Error;
-
-      // Check if retryable
-      const isRetryable =
-        error instanceof Error &&
-        (policy.retryableStatusCodes.includes(parseInt(error.message, 10)) ||
-          error.name === 'AbortError' ||
-          error.message.includes('timeout'));
-
-      if (attempt < policy.maxRetries && isRetryable) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        delay = Math.min(delay * policy.backoffMultiplier, policy.maxDelayMs);
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  if (lastError) {
-    throw lastError;
-  }
-}
-
-/**
- * Execute tools in parallel and collect results.
- */
-async function executeTools(
-  toolCalls: ReadonlyArray<ToolCall>,
-  tools: ReadonlyArray<{
-    readonly name: string;
-    readonly parameters?: Record<string, unknown>;
-    readonly execute?: (args: Record<string, unknown>) => Promise<string>;
-  }>,
-): Promise<Array<ToolResult>> {
-  const toolMap = new Map(tools.map((t) => [t.name, t]));
-
-  const results = await Promise.allSettled(
-    toolCalls.map(async (toolCall) => {
-      const tool = toolMap.get(toolCall.toolName);
-
-      if (!tool) {
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: `Unknown tool: ${toolCall.toolName}`,
-          isError: true,
-        };
-      }
-
-      if (!tool.execute) {
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: `Tool ${toolCall.toolName} does not support execution`,
-          isError: true,
-        };
-      }
-
-      try {
-        const result = await tool.execute(toolCall.args);
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: result,
-          isError: false,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return {
-          toolCallId: toolCall.toolCallId,
-          content: message,
-          isError: true,
-        };
-      }
-    }),
-  );
-
-  return results.map((result, index) => {
-    if (result.status === 'fulfilled') {
-      return result.value;
-    } else {
-      const toolCall = toolCalls[index];
-      return {
-        toolCallId: toolCall?.toolCallId ?? '',
-        content:
-          result.reason instanceof Error
-            ? result.reason.message
-            : String(result.reason),
-        isError: true,
-      };
-    }
-  });
-}

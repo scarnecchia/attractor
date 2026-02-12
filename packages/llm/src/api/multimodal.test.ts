@@ -27,7 +27,7 @@ function createMockClient(
 
   return {
     name: 'test',
-    complete: vi.fn(async (request) => {
+    complete: vi.fn(async () => {
       const response = mockResponses[Math.min(callCount, mockResponses.length - 1)];
       callCount += 1;
       // Return the response but track what was sent
