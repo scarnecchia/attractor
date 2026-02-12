@@ -28,11 +28,11 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      expect(result.body.system).toBeDefined();
-      const systemArray = result.body.system as Array<Record<string, unknown>>;
+      expect(result.body['system']).toBeDefined();
+      const systemArray = result.body['system'] as Array<Record<string, unknown>>;
       expect(systemArray).toHaveLength(1);
-      expect(systemArray[0].type).toBe('text');
-      expect(systemArray[0].text).toBe('You are helpful');
+      expect(systemArray[0]!['type']).toBe('text');
+      expect(systemArray[0]!['text']).toBe('You are helpful');
     });
 
     it('should translate user text message correctly', () => {
@@ -43,14 +43,14 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
-      const msg = messagesArray[0];
-      expect(msg.role).toBe('user');
-      const content = msg.content as Array<Record<string, unknown>>;
+      const msg = messagesArray[0]!;
+      expect(msg['role']).toBe('user');
+      const content = msg['content'] as Array<Record<string, unknown>>;
       expect(content).toHaveLength(1);
-      expect(content[0].type).toBe('text');
-      expect(content[0].text).toBe('hello');
+      expect(content[0]!['type']).toBe('text');
+      expect(content[0]!['text']).toBe('hello');
     });
 
     it('should translate assistant message correctly', () => {
@@ -61,13 +61,13 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
-      const msg = messagesArray[0];
-      expect(msg.role).toBe('assistant');
-      const content = msg.content as Array<Record<string, unknown>>;
+      const msg = messagesArray[0]!;
+      expect(msg['role']).toBe('assistant');
+      const content = msg['content'] as Array<Record<string, unknown>>;
       expect(content).toHaveLength(1);
-      expect(content[0].type).toBe('text');
+      expect(content[0]!['type']).toBe('text');
     });
 
     it('should translate tool result message correctly', () => {
@@ -90,15 +90,15 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
-      const msg = messagesArray[0];
-      expect(msg.role).toBe('user');
-      const content = msg.content as Array<Record<string, unknown>>;
+      const msg = messagesArray[0]!;
+      expect(msg['role']).toBe('user');
+      const content = msg['content'] as Array<Record<string, unknown>>;
       expect(content).toHaveLength(1);
-      expect(content[0].type).toBe('tool_result');
-      expect(content[0].tool_use_id).toBe('call-123');
-      expect(content[0].content).toBe('tool output');
+      expect(content[0]!['type']).toBe('tool_result');
+      expect(content[0]!['tool_use_id']).toBe('call-123');
+      expect(content[0]!['content']).toBe('tool output');
     });
 
     it('should translate developer message as user', () => {
@@ -109,10 +109,10 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
-      const msg = messagesArray[0];
-      expect(msg.role).toBe('user');
+      const msg = messagesArray[0]!;
+      expect(msg['role']).toBe('user');
     });
 
     it('should merge consecutive user messages', () => {
@@ -136,11 +136,11 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
-      const msg = messagesArray[0];
-      expect(msg.role).toBe('user');
-      const content = msg.content as Array<Record<string, unknown>>;
+      const msg = messagesArray[0]!;
+      expect(msg['role']).toBe('user');
+      const content = msg['content'] as Array<Record<string, unknown>>;
       expect(content.length).toBeGreaterThan(1);
     });
   });
@@ -159,7 +159,7 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      expect(result.body.metadata).toEqual({ key: 'value' });
+      expect(result.body['metadata']).toEqual({ key: 'value' });
     });
   });
 
@@ -191,10 +191,10 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      expect(content[0].type).toBe('text');
-      expect(content[0].text).toBe('hello world');
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      expect(content[0]!['type']).toBe('text');
+      expect(content[0]!['text']).toBe('hello world');
     });
   });
 
@@ -220,14 +220,14 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      const imageBlock = content.find((c) => (c.type as string) === 'image');
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      const imageBlock = content.find((c) => (c['type'] as string) === 'image');
       expect(imageBlock).toBeDefined();
-      const source = imageBlock?.source as Record<string, unknown>;
-      expect(source.type).toBe('base64');
-      expect(source.media_type).toBe('image/png');
-      expect(source.data).toBe('iVBORw0KGgo=');
+      const source = imageBlock!['source'] as Record<string, unknown>;
+      expect(source['type']).toBe('base64');
+      expect(source['media_type']).toBe('image/png');
+      expect(source['data']).toBe('iVBORw0KGgo=');
     });
   });
 
@@ -253,13 +253,13 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      const imageBlock = content.find((c) => (c.type as string) === 'image');
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      const imageBlock = content.find((c) => (c['type'] as string) === 'image');
       expect(imageBlock).toBeDefined();
-      const source = imageBlock?.source as Record<string, unknown>;
-      expect(source.type).toBe('url');
-      expect(source.url).toBe('https://example.com/image.png');
+      const source = imageBlock!['source'] as Record<string, unknown>;
+      expect(source['type']).toBe('url');
+      expect(source['url']).toBe('https://example.com/image.png');
     });
   });
 
@@ -284,12 +284,12 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const messagesArray = result.body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      const toolUseBlock = content.find((c) => (c.type as string) === 'tool_use');
+      const messagesArray = result.body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      const toolUseBlock = content.find((c) => (c['type'] as string) === 'tool_use');
       expect(toolUseBlock).toBeDefined();
-      expect(toolUseBlock?.id).toBe('call-123');
-      expect(toolUseBlock?.name).toBe('get_weather');
+      expect(toolUseBlock!['id']).toBe('call-123');
+      expect(toolUseBlock!['name']).toBe('get_weather');
     });
   });
 
@@ -303,9 +303,9 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const systemArray = result.body.system as Array<Record<string, unknown>>;
+      const systemArray = result.body['system'] as Array<Record<string, unknown>>;
       const lastBlock = systemArray[systemArray.length - 1];
-      expect(lastBlock.cache_control).toBeDefined();
+      expect(lastBlock!['cache_control']).toBeDefined();
       expect(result.headers['anthropic-beta']).toContain('prompt-caching-2024-07-31');
     });
 
@@ -323,9 +323,9 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const systemArray = result.body.system as Array<Record<string, unknown>>;
+      const systemArray = result.body['system'] as Array<Record<string, unknown>>;
       const lastBlock = systemArray[systemArray.length - 1];
-      expect(lastBlock.cache_control).toBeUndefined();
+      expect(lastBlock!['cache_control']).toBeUndefined();
     });
   });
 
@@ -338,7 +338,7 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      expect(result.body.max_tokens).toBe(4096);
+      expect(result.body['max_tokens']).toBe(4096);
     });
 
     it('should use provided maxTokens', () => {
@@ -350,7 +350,7 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      expect(result.body.max_tokens).toBe(1000);
+      expect(result.body['max_tokens']).toBe(1000);
     });
   });
 
@@ -364,8 +364,8 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const toolChoice = result.body.tool_choice as Record<string, unknown>;
-      expect(toolChoice.type).toBe('auto');
+      const toolChoice = result.body['tool_choice'] as Record<string, unknown>;
+      expect(toolChoice['type']).toBe('auto');
     });
 
     it('should translate tool choice required', () => {
@@ -377,8 +377,8 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const toolChoice = result.body.tool_choice as Record<string, unknown>;
-      expect(toolChoice.type).toBe('any');
+      const toolChoice = result.body['tool_choice'] as Record<string, unknown>;
+      expect(toolChoice['type']).toBe('any');
     });
 
     it('should translate tool choice named', () => {
@@ -390,9 +390,9 @@ describe('Anthropic Request Translation', () => {
 
       const result = translateRequest(request, 'test-api-key');
 
-      const toolChoice = result.body.tool_choice as Record<string, unknown>;
-      expect(toolChoice.type).toBe('tool');
-      expect(toolChoice.name).toBe('my_tool');
+      const toolChoice = result.body['tool_choice'] as Record<string, unknown>;
+      expect(toolChoice['type']).toBe('tool');
+      expect(toolChoice['name']).toBe('my_tool');
     });
   });
 

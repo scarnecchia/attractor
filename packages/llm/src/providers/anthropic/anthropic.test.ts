@@ -8,12 +8,11 @@ describe('Anthropic Adapter', () => {
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    originalFetch = globalThis.fetch;
-    (globalThis as any).fetch = fetchMock;
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
+    vi.unstubAllGlobals();
   });
 
   function getCallBody() {
@@ -79,11 +78,11 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      expect(body.system).toBeDefined();
-      const systemArray = body.system as Array<Record<string, unknown>>;
+      expect(body['system']).toBeDefined();
+      const systemArray = body['system'] as Array<Record<string, unknown>>;
       expect(systemArray).toHaveLength(1);
-      expect(systemArray[0].type).toBe('text');
-      expect(systemArray[0].text).toBe('You are helpful');
+      expect(systemArray[0]!['type']).toBe('text');
+      expect(systemArray[0]!['text']).toBe('You are helpful');
     });
 
     it('should translate all 5 roles correctly', async () => {
@@ -123,8 +122,8 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const messagesArray = body.messages as Array<Record<string, unknown>>;
-      const roles = messagesArray.map((m) => m.role);
+      const messagesArray = body['messages'] as Array<Record<string, unknown>>;
+      const roles = messagesArray.map((m) => m['role']);
       expect(roles).toContain('user');
       expect(roles).toContain('assistant');
     });
@@ -219,10 +218,10 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const messagesArray = body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      expect(content[0].type).toBe('text');
-      expect(content[0].text).toBe('hello world');
+      const messagesArray = body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      expect(content[0]!['type']).toBe('text');
+      expect(content[0]!['text']).toBe('hello world');
     });
   });
 
@@ -261,13 +260,13 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const messagesArray = body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      const imageBlock = content.find((c) => (c.type as string) === 'image');
+      const messagesArray = body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      const imageBlock = content.find((c) => (c['type'] as string) === 'image');
       expect(imageBlock).toBeDefined();
-      const source = imageBlock?.source as Record<string, unknown>;
-      expect(source.type).toBe('base64');
-      expect(source.data).toBe('iVBORw0KGgo=');
+      const source = imageBlock!['source'] as Record<string, unknown>;
+      expect(source['type']).toBe('base64');
+      expect(source['data']).toBe('iVBORw0KGgo=');
     });
   });
 
@@ -306,11 +305,11 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const messagesArray = body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      const imageBlock = content.find((c) => (c.type as string) === 'image');
-      const source = imageBlock?.source as Record<string, unknown>;
-      expect(source.type).toBe('url');
+      const messagesArray = body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      const imageBlock = content.find((c) => (c['type'] as string) === 'image');
+      const source = imageBlock!['source'] as Record<string, unknown>;
+      expect(source['type']).toBe('url');
     });
   });
 
@@ -349,10 +348,12 @@ describe('Anthropic Adapter', () => {
       const response = await adapter.complete(request);
 
       expect(response.content).toHaveLength(1);
-      const toolCall = response.content[0];
+      const toolCall = response.content[0]!;
       expect(toolCall.kind).toBe('TOOL_CALL');
-      expect(toolCall.toolCallId).toBe('call-123');
-      expect(toolCall.toolName).toBe('get_weather');
+      if (toolCall.kind === 'TOOL_CALL') {
+        expect(toolCall.toolCallId).toBe('call-123');
+        expect(toolCall.toolName).toBe('get_weather');
+      }
     });
 
     it('should format tool result in request', async () => {
@@ -389,11 +390,11 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const messagesArray = body.messages as Array<Record<string, unknown>>;
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
-      const toolResult = content.find((c) => (c.type as string) === 'tool_result');
+      const messagesArray = body['messages'] as Array<Record<string, unknown>>;
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
+      const toolResult = content.find((c) => (c['type'] as string) === 'tool_result');
       expect(toolResult).toBeDefined();
-      expect(toolResult?.tool_use_id).toBe('call-123');
+      expect(toolResult!['tool_use_id']).toBe('call-123');
     });
   });
 
@@ -426,10 +427,12 @@ describe('Anthropic Adapter', () => {
       const response = await adapter.complete(request);
 
       expect(response.content).toHaveLength(1);
-      const thinking = response.content[0];
+      const thinking = response.content[0]!;
       expect(thinking.kind).toBe('THINKING');
-      expect(thinking.text).toBe('let me analyze');
-      expect(thinking.signature).toBe('sig-abc');
+      if (thinking.kind === 'THINKING') {
+        expect(thinking.text).toBe('let me analyze');
+        expect(thinking.signature).toBe('sig-abc');
+      }
     });
 
     it('should handle redacted thinking content block', async () => {
@@ -459,7 +462,7 @@ describe('Anthropic Adapter', () => {
       const response = await adapter.complete(request);
 
       expect(response.content).toHaveLength(1);
-      const redacted = response.content[0];
+      const redacted = response.content[0]!;
       expect(redacted.kind).toBe('REDACTED_THINKING');
     });
   });
@@ -488,9 +491,9 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const systemArray = body.system as Array<Record<string, unknown>>;
+      const systemArray = body['system'] as Array<Record<string, unknown>>;
       const lastBlock = systemArray[systemArray.length - 1];
-      expect(lastBlock.cache_control).toBeDefined();
+      expect(lastBlock!['cache_control']).toBeDefined();
 
       const calls = fetchMock.mock.calls;
       const headers = (calls[0]?.[1] as any)?.headers;
@@ -525,9 +528,9 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const systemArray = body.system as Array<Record<string, unknown>>;
+      const systemArray = body['system'] as Array<Record<string, unknown>>;
       const lastBlock = systemArray[systemArray.length - 1];
-      expect(lastBlock.cache_control).toBeUndefined();
+      expect(lastBlock!['cache_control']).toBeUndefined();
     });
   });
 
@@ -625,10 +628,10 @@ describe('Anthropic Adapter', () => {
       await adapter.complete(request);
 
       const body = getCallBody();
-      const messagesArray = body.messages as Array<Record<string, unknown>>;
+      const messagesArray = body['messages'] as Array<Record<string, unknown>>;
       expect(messagesArray).toHaveLength(1);
-      expect(messagesArray[0].role).toBe('user');
-      const content = messagesArray[0].content as Array<Record<string, unknown>>;
+      expect(messagesArray[0]!['role']).toBe('user');
+      const content = messagesArray[0]!['content'] as Array<Record<string, unknown>>;
       expect(content.length).toBeGreaterThan(1);
     });
   });

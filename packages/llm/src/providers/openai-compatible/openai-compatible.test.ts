@@ -5,16 +5,15 @@ import type { SSEEvent } from '../../utils/sse.js';
 
 describe('OpenAI-Compatible Adapter', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  let originalFetch: typeof fetch;
+  
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    originalFetch = globalThis.fetch;
-    (globalThis as any).fetch = fetchMock;
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
+    vi.unstubAllGlobals();
   });
 
   function getCallBody() {
@@ -311,11 +310,11 @@ describe('OpenAI-Compatible Adapter', () => {
       const response = await adapter.complete(request);
 
       expect(response.content).toHaveLength(1);
-      const toolCall = response.content[0];
+      const toolCall = response.content[0]!;
       expect(toolCall?.kind).toBe('TOOL_CALL');
       if (toolCall && toolCall.kind === 'TOOL_CALL') {
-        expect(toolCall.toolCallId).toBe('call-xyz');
-        expect(toolCall.toolName).toBe('get_weather');
+        expect((toolCall as any).toolCallId).toBe('call-xyz');
+        expect((toolCall as any).toolName).toBe('get_weather');
         expect(toolCall.args['location']).toBe('NYC');
         expect(toolCall.args['units']).toBe('C');
       }

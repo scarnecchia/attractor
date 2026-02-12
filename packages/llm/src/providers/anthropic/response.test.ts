@@ -33,8 +33,10 @@ describe('Anthropic Response Translation', () => {
 
       expect(result.content).toHaveLength(1);
       const text = result.content[0];
+      if (text === undefined) throw new Error("not found");
+
       expect(text.kind).toBe('TEXT');
-      expect(text.text).toBe('hello world');
+      expect((text as any).text).toBe('hello world');
     });
 
     it('should translate tool_use content blocks', () => {
@@ -57,10 +59,12 @@ describe('Anthropic Response Translation', () => {
 
       expect(result.content).toHaveLength(1);
       const toolCall = result.content[0];
+      if (toolCall === undefined) throw new Error("not found");
+
       expect(toolCall.kind).toBe('TOOL_CALL');
-      expect(toolCall.toolCallId).toBe('call-123');
-      expect(toolCall.toolName).toBe('get_weather');
-      expect(toolCall.args).toEqual({ location: 'NY' });
+      expect((toolCall as any).toolCallId).toBe('call-123');
+      expect((toolCall as any).toolName).toBe('get_weather');
+      expect((toolCall as any).args).toEqual({ location: 'NY' });
     });
 
     it('should translate thinking content blocks', () => {
@@ -82,9 +86,11 @@ describe('Anthropic Response Translation', () => {
 
       expect(result.content).toHaveLength(1);
       const thinking = result.content[0];
+      if (thinking === undefined) throw new Error("not found");
+
       expect(thinking.kind).toBe('THINKING');
-      expect(thinking.text).toBe('let me think about this');
-      expect(thinking.signature).toBe('sig-abc');
+      expect((thinking as any).text).toBe('let me think about this');
+      expect((thinking as any).signature).toBe('sig-abc');
     });
 
     it('should translate redacted_thinking content blocks', () => {
@@ -105,8 +111,10 @@ describe('Anthropic Response Translation', () => {
 
       expect(result.content).toHaveLength(1);
       const redacted = result.content[0];
+      if (redacted === undefined) throw new Error("not found");
+
       expect(redacted.kind).toBe('REDACTED_THINKING');
-      expect(redacted.data).toBe('base64encodeddata');
+      expect((redacted as any).data).toBe('base64encodeddata');
     });
   });
 

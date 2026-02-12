@@ -1,10 +1,10 @@
-import type { LLMResponse, FinishReason } from '../../types/index.js';
+import type { LLMResponse, FinishReason, ContentPart } from '../../types/index.js';
 
 export function translateResponse(raw: Record<string, unknown>): LLMResponse {
   const id = (raw['id'] as string) || '';
   const model = (raw['model'] as string) || '';
 
-  const contentParts: Array<any> = [];
+  const contentParts: Array<ContentPart> = [];
 
   // Extract first choice's message
   const choices = raw['choices'] as Array<Record<string, unknown>> | undefined;

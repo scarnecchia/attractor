@@ -4,16 +4,15 @@ import type { LLMRequest, ToolCallData, StreamEvent } from '../../types/index.js
 
 describe('OpenAI Adapter', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  let originalFetch: typeof fetch;
+  
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    originalFetch = globalThis.fetch;
-    (globalThis as any).fetch = fetchMock;
+    vi.stubGlobal('fetch', fetchMock);
   });
 
   afterEach(() => {
-    globalThis.fetch = originalFetch;
+    vi.unstubAllGlobals();
   });
 
   function getCallBody() {

@@ -1,4 +1,4 @@
-import type { LLMResponse } from '../../types/index.js';
+import type { LLMResponse, ContentPart } from '../../types/index.js';
 import { randomUUID } from 'node:crypto';
 
 export function translateResponse(
@@ -8,7 +8,7 @@ export function translateResponse(
   const id = randomUUID();
   const model = (raw['model'] as string) || 'gemini-unknown';
 
-  const contentParts: Array<any> = [];
+  const contentParts: Array<ContentPart> = [];
 
   // Parse candidates[0].content.parts
   const candidates = raw['candidates'] as Array<Record<string, unknown>> | undefined;

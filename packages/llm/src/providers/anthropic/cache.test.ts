@@ -25,12 +25,12 @@ describe('Anthropic Cache Control Injection', () => {
 
       const result = injectCacheControl(body, true);
 
-      const systemArray = result.system as Array<Record<string, unknown>>;
+      const systemArray = result['system'] as Array<Record<string, unknown>> | undefined;
       expect(systemArray).toBeDefined();
-      expect(systemArray.length).toBe(2);
-      expect(systemArray[1]).toHaveProperty('cache_control');
-      const cacheControl = systemArray[1].cache_control as Record<string, unknown>;
-      expect(cacheControl.type).toBe('ephemeral');
+      expect(systemArray!.length).toBe(2);
+      expect(systemArray![1]).toHaveProperty('cache_control');
+      const cacheControl = systemArray![1]['cache_control'] as Record<string, unknown>;
+      expect(cacheControl['type']).toBe('ephemeral');
     });
 
     it('should inject cache_control on last tool in tools array when autoCache is true', () => {
@@ -43,12 +43,12 @@ describe('Anthropic Cache Control Injection', () => {
 
       const result = injectCacheControl(body, true);
 
-      const toolsArray = result.tools as Array<Record<string, unknown>>;
+      const toolsArray = result['tools'] as Array<Record<string, unknown>> | undefined;
       expect(toolsArray).toBeDefined();
-      expect(toolsArray.length).toBe(2);
-      expect(toolsArray[1]).toHaveProperty('cache_control');
-      const cacheControl = toolsArray[1].cache_control as Record<string, unknown>;
-      expect(cacheControl.type).toBe('ephemeral');
+      expect(toolsArray!.length).toBe(2);
+      expect(toolsArray![1]).toHaveProperty('cache_control');
+      const cacheControl = toolsArray![1]['cache_control'] as Record<string, unknown>;
+      expect(cacheControl['type']).toBe('ephemeral');
     });
 
     it('should inject cache_control on last user message last block when autoCache is true', () => {
@@ -77,17 +77,18 @@ describe('Anthropic Cache Control Injection', () => {
 
       const result = injectCacheControl(body, true);
 
-      const messagesArray = result.messages as Array<Record<string, unknown>>;
+      const messagesArray = result['messages'] as Array<Record<string, unknown>> | undefined;
       expect(messagesArray).toBeDefined();
-      expect(messagesArray.length).toBe(3);
+      expect(messagesArray!.length).toBe(3);
 
-      const lastUserMessage = messagesArray[2];
-      const contentArray = lastUserMessage.content as Array<Record<string, unknown>>;
+      const lastUserMessage = messagesArray![2];
+      expect(lastUserMessage).toBeDefined();
+      const contentArray = (lastUserMessage as Record<string, unknown>)['content'] as Array<Record<string, unknown>> | undefined;
       expect(contentArray).toBeDefined();
-      expect(contentArray.length).toBe(2);
-      expect(contentArray[1]).toHaveProperty('cache_control');
-      const cacheControl = contentArray[1].cache_control as Record<string, unknown>;
-      expect(cacheControl.type).toBe('ephemeral');
+      expect(contentArray!.length).toBe(2);
+      expect(contentArray![1]).toHaveProperty('cache_control');
+      const cacheControl = contentArray![1]['cache_control'] as Record<string, unknown>;
+      expect(cacheControl['type']).toBe('ephemeral');
     });
 
     it('should handle missing system, tools, or messages gracefully', () => {

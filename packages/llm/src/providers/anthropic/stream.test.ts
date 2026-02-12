@@ -12,8 +12,7 @@ describe('Anthropic Stream Translation', () => {
   describe('Stream start event', () => {
     it('should yield STREAM_START on message_start event', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: {
               id: 'msg-123',
@@ -39,20 +38,17 @@ describe('Anthropic Stream Translation', () => {
   describe('Text delta events', () => {
     it('should yield TEXT_DELTA on text_delta event', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: { id: 'msg-123', model: 'claude-opus-4-6' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_start',
             content_block: { type: 'text' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_delta',
             delta: { type: 'text_delta', text: 'hello' },
           }),
@@ -73,28 +69,24 @@ describe('Anthropic Stream Translation', () => {
   describe('Tool call events', () => {
     it('should yield TOOL_CALL_START and TOOL_CALL_END for tool_use blocks', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: { id: 'msg-123', model: 'claude-opus-4-6' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_start',
             index: 1,
             content_block: { type: 'tool_use', id: 'call-123', name: 'get_weather' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_delta',
             index: 1,
             delta: { type: 'input_json_delta', partial_json: '{"loc' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_stop',
             index: 1,
           }),
@@ -123,20 +115,17 @@ describe('Anthropic Stream Translation', () => {
   describe('Thinking delta events', () => {
     it('should yield THINKING_DELTA on thinking_delta event', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: { id: 'msg-123', model: 'claude-opus-4-6' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_start',
             content_block: { type: 'thinking' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'content_block_delta',
             delta: { type: 'thinking_delta', thinking: 'let me' },
           }),
@@ -157,21 +146,18 @@ describe('Anthropic Stream Translation', () => {
   describe('Finish event', () => {
     it('should yield FINISH with usage and finish reason on message_stop', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: { id: 'msg-123', model: 'claude-opus-4-6' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_delta',
             delta: { stop_reason: 'end_turn' },
             usage: { output_tokens: 50 },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_stop',
           }),
         },
@@ -192,21 +178,18 @@ describe('Anthropic Stream Translation', () => {
   describe('Usage accumulation', () => {
     it('should accumulate usage across message_delta events', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: { id: 'msg-123', model: 'claude-opus-4-6' },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_delta',
             delta: { stop_reason: 'end_turn' },
             usage: { output_tokens: 50, cache_read_input_tokens: 100 },
           }),
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_stop',
           }),
         },
@@ -236,8 +219,7 @@ describe('Anthropic Stream Translation', () => {
 
     it('should handle invalid JSON gracefully', async () => {
       const events: Array<SSEEvent> = [
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_start',
             message: { id: 'msg-123', model: 'claude-opus-4-6' },
           }),
@@ -245,8 +227,7 @@ describe('Anthropic Stream Translation', () => {
         {
           data: 'invalid json {]',
         },
-        {
-          data: JSON.stringify({
+        { event: "message", data: JSON.stringify({
             type: 'message_stop',
           }),
         },

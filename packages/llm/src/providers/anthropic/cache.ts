@@ -9,35 +9,35 @@ export function injectCacheControl(
   const result = JSON.parse(JSON.stringify(body)) as Record<string, unknown>;
 
   // Inject cache_control on system array last block
-  const system = result.system as Array<Record<string, unknown>> | undefined;
+  const system = result['system'] as Array<Record<string, unknown>> | undefined;
   if (system && Array.isArray(system) && system.length > 0) {
     const lastBlock = system[system.length - 1];
-    if (lastBlock) {
-      lastBlock.cache_control = { type: 'ephemeral' };
+    if (lastBlock !== undefined) {
+      lastBlock['cache_control'] = { type: 'ephemeral' };
     }
   }
 
   // Inject cache_control on last tool in tools array
-  const tools = result.tools as Array<Record<string, unknown>> | undefined;
+  const tools = result['tools'] as Array<Record<string, unknown>> | undefined;
   if (tools && Array.isArray(tools) && tools.length > 0) {
     const lastTool = tools[tools.length - 1];
-    if (lastTool) {
-      lastTool.cache_control = { type: 'ephemeral' };
+    if (lastTool !== undefined) {
+      lastTool['cache_control'] = { type: 'ephemeral' };
     }
   }
 
   // Inject cache_control on last content block of last user message
-  const messages = result.messages as Array<Record<string, unknown>> | undefined;
+  const messages = result['messages'] as Array<Record<string, unknown>> | undefined;
   if (messages && Array.isArray(messages) && messages.length > 0) {
     // Find last user message
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
-      if (message && message.role === 'user') {
-        const content = message.content as Array<Record<string, unknown>> | undefined;
+      if (message !== undefined && message['role'] === 'user') {
+        const content = message['content'] as Array<Record<string, unknown>> | undefined;
         if (content && Array.isArray(content) && content.length > 0) {
           const lastBlock = content[content.length - 1];
-          if (lastBlock) {
-            lastBlock.cache_control = { type: 'ephemeral' };
+          if (lastBlock !== undefined) {
+            lastBlock['cache_control'] = { type: 'ephemeral' };
           }
         }
         break;
