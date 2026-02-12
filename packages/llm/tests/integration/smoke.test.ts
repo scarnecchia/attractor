@@ -26,17 +26,15 @@ function getFirstAvailableProvider(): TestProvider | null {
 describe('End-to-End Smoke Test', () => {
   const provider = getFirstAvailableProvider();
   const model = provider ? DEFAULT_MODEL[provider] : null;
+  const canRun = provider && model;
 
   // Scenario 1: Basic generation
-  test('Scenario 1: Basic generation across available providers', async () => {
-    if (!provider || !model) {
-      test.skip();
-      return;
-    }
+  test('Scenario 1: Basic generation across available providers', { skip: !canRun }, async () => {
+    expect(canRun).toBe(true);
 
     const result = await generate({
-      model,
-      provider,
+      model: model!,
+      provider: provider!,
       prompt: 'What is 2+2?',
       maxTokens: 50,
     });
@@ -46,18 +44,13 @@ describe('End-to-End Smoke Test', () => {
   });
 
   // Scenario 2: Streaming verification
-  test('Scenario 2: Streaming collects TEXT_DELTA events correctly', async () => {
-    if (!provider || !model) {
-      test.skip();
-      return;
-    }
-
+  test('Scenario 2: Streaming collects TEXT_DELTA events correctly', { skip: !canRun }, async () => {
     const events: any[] = [];
     const textParts: string[] = [];
 
     const streamResult = stream({
-      model,
-      provider,
+      model: model!,
+      provider: provider!,
       prompt: 'Count from 1 to 5',
       maxTokens: 100,
     });
@@ -80,15 +73,10 @@ describe('End-to-End Smoke Test', () => {
   });
 
   // Scenario 3: Image input
-  test('Scenario 3: Image input returns description', async () => {
-    if (!provider || !model) {
-      test.skip();
-      return;
-    }
-
+  test('Scenario 3: Image input returns description', { skip: !canRun }, async () => {
     const result = await generate({
-      model,
-      provider,
+      model: model!,
+      provider: provider!,
       messages: [
         {
           role: 'user',
@@ -106,12 +94,7 @@ describe('End-to-End Smoke Test', () => {
   });
 
   // Scenario 4: Tool calling with parallel execution
-  test('Scenario 4: Tool calling with parallel execution', async () => {
-    if (!provider || !model) {
-      test.skip();
-      return;
-    }
-
+  test('Scenario 4: Tool calling with parallel execution', { skip: !canRun }, async () => {
     const tools: Tool[] = [
       {
         name: 'add',
@@ -148,8 +131,8 @@ describe('End-to-End Smoke Test', () => {
     ];
 
     const result = await generate({
-      model,
-      provider,
+      model: model!,
+      provider: provider!,
       prompt: 'What is 3+4 and 2*5?',
       tools,
       maxTokens: 150,
@@ -163,15 +146,10 @@ describe('End-to-End Smoke Test', () => {
   });
 
   // Scenario 5: Structured output
-  test('Scenario 5: Structured output generates valid object', async () => {
-    if (!provider || !model) {
-      test.skip();
-      return;
-    }
-
+  test('Scenario 5: Structured output generates valid object', { skip: !canRun }, async () => {
     const result = await generateObject({
-      model,
-      provider,
+      model: model!,
+      provider: provider!,
       prompt: 'Generate a person named Alice who is 30',
       schema: {
         type: 'object',
@@ -199,19 +177,14 @@ describe('End-to-End Smoke Test', () => {
   });
 
   // Scenario 6: Error handling
-  test('Scenario 6: Invalid API key throws AuthenticationError', async () => {
-    if (!provider || !model) {
-      test.skip();
-      return;
-    }
-
+  test('Scenario 6: Invalid API key throws AuthenticationError', { skip: !canRun }, async () => {
     try {
       await generate({
-        model,
-        provider,
+        model: model!,
+        provider: provider!,
         prompt: 'Test',
         providerOptions: {
-          [provider]: {
+          [provider!]: {
             apiKey: 'invalid-key-xyz-123',
           },
         },
