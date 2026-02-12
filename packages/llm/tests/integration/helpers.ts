@@ -19,13 +19,10 @@ const PROVIDER_ADAPTER_FACTORIES: Record<TestProvider, (apiKey: string) => any> 
   gemini: (apiKey: string) => new GeminiAdapter(apiKey),
 };
 
-export function skipIfNoKey(provider: TestProvider): void {
+export function hasApiKey(provider: TestProvider): boolean {
   const envVar = PROVIDER_ENV_VARS[provider];
   const apiKey = process.env[envVar];
-
-  if (!apiKey) {
-    test.skip('API key not set', () => {});
-  }
+  return !!apiKey;
 }
 
 export function createTestClient(): Client {
