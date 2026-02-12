@@ -1,4 +1,5 @@
 export class SDKError extends Error {
+  // Cannot be readonly: Error.name is mutable in built-in types
   override name: string;
   override readonly cause?: Error;
 
@@ -20,8 +21,8 @@ export class RequestTimeoutError extends SDKError {}
 export class NoObjectGeneratedError extends SDKError {
   readonly raw: unknown;
 
-  constructor(message: string, raw: unknown) {
-    super(message);
+  constructor(message: string, raw: unknown, cause?: Error) {
+    super(message, cause);
     this.raw = raw;
   }
 }

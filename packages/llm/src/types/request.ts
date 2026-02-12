@@ -2,7 +2,7 @@ import type { Message } from './message.js';
 import type { Tool, ToolChoice } from './tool.js';
 import type { TimeoutConfig, ResponseFormat } from './config.js';
 
-export type Request = {
+export type LLMRequest = {
   readonly model: string;
   readonly provider?: string;
   readonly messages?: ReadonlyArray<Message>;

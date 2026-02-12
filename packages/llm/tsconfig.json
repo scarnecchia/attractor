@@ -16,6 +16,7 @@
     "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "moduleDetection": "force"

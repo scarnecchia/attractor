@@ -37,7 +37,7 @@ export function toolMessage(
     role: 'tool',
     content: [
       {
-        kind: 'TOOL_RESULT' as const,
+        kind: 'TOOL_RESULT',
         toolCallId,
         content,
         isError: isError ?? false,

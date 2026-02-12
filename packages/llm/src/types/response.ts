@@ -12,7 +12,7 @@ export type Usage = {
   readonly cacheWriteTokens: number;
 };
 
-export function usageAdd(a: Usage, b: Usage): Usage {
+export function usageAdd(a: Readonly<Usage>, b: Readonly<Usage>): Usage {
   return {
     inputTokens: a.inputTokens + b.inputTokens,
     outputTokens: a.outputTokens + b.outputTokens,
@@ -49,13 +49,13 @@ export type Warning = {
 };
 
 export type StepResult = {
-  readonly response: Response;
+  readonly response: LLMResponse;
   readonly toolCalls: ReadonlyArray<ToolCall>;
   readonly toolResults: ReadonlyArray<ToolResult>;
   readonly usage: Usage;
 };
 
-export type Response = {
+export type LLMResponse = {
   readonly id: string;
   readonly model: string;
   readonly content: ReadonlyArray<ContentPart>;
