@@ -1,10 +1,9 @@
 import { expect, test } from 'vitest';
-import type { Tool } from '../../src/types/index.js';
+import type { Tool, StreamEvent } from '../../src/types/index.js';
 import { AuthenticationError as AuthErrorType, RateLimitError } from '../../src/types/index.js';
 import { generate } from '../../src/api/generate.js';
 import { generateObject } from '../../src/api/generate-object.js';
 import { stream } from '../../src/api/stream.js';
-import type { StreamEvent } from '../../src/types/index.js';
 import { describeForEachProvider, hasApiKey, TEST_FIXTURES, DEFAULT_MODEL } from './helpers.js';
 import type { TestProvider } from './helpers.js';
 
@@ -343,7 +342,7 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
     // This test verifies the SDK can handle rate limit errors
     // Triggering actual rate limits is not feasible in integration tests
     // Instead, we verify the error type can be instantiated with expected properties
-    const error = new RateLimitError('Rate limit exceeded', 429, 60);
+    const error = new RateLimitError('Rate limit exceeded', 429, 'test-provider', null, null, 60);
     expect(error).toBeTruthy();
     expect(error instanceof RateLimitError).toBe(true);
     expect(error.statusCode).toBe(429);

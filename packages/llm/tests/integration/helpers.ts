@@ -1,8 +1,4 @@
 import { describe } from 'vitest';
-import type { StreamEvent } from '../../src/types/index.js';
-import { OpenAIAdapter } from '../../src/providers/openai/index.js';
-import { AnthropicAdapter } from '../../src/providers/anthropic/index.js';
-import { GeminiAdapter } from '../../src/providers/gemini/index.js';
 
 export const PROVIDERS = ['openai', 'anthropic', 'gemini'] as const;
 export type TestProvider = typeof PROVIDERS[number];
@@ -11,12 +7,6 @@ const PROVIDER_ENV_VARS: Record<TestProvider, string> = {
   openai: 'OPENAI_API_KEY',
   anthropic: 'ANTHROPIC_API_KEY',
   gemini: 'GEMINI_API_KEY',
-};
-
-const PROVIDER_ADAPTER_FACTORIES: Record<TestProvider, (apiKey: string) => OpenAIAdapter | AnthropicAdapter | GeminiAdapter> = {
-  openai: (apiKey: string) => new OpenAIAdapter(apiKey),
-  anthropic: (apiKey: string) => new AnthropicAdapter(apiKey),
-  gemini: (apiKey: string) => new GeminiAdapter(apiKey),
 };
 
 export function hasApiKey(provider: TestProvider): boolean {

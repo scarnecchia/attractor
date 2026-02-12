@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'vitest';
-import type { Tool } from '../../src/types/index.js';
+import type { Tool, StreamEvent } from '../../src/types/index.js';
 import { AuthenticationError as AuthErrorType } from '../../src/types/index.js';
 import { generate } from '../../src/api/generate.js';
 import { generateObject } from '../../src/api/generate-object.js';
@@ -39,7 +39,7 @@ describe('End-to-End Smoke Test', () => {
 
   // Scenario 2: Streaming verification
   test('Scenario 2: Streaming collects TEXT_DELTA events correctly', { skip: !canRun }, async () => {
-    const events: any[] = [];
+    const events: Array<StreamEvent> = [];
     const textParts: string[] = [];
 
     const streamResult = stream({
