@@ -131,9 +131,9 @@ export function translateRequest(
             // But we've already tracked them in the map above
             continue;
           } else if (kind === 'AUDIO') {
-            console.warn('Audio content not natively supported by Gemini in this SDK version');
+            // Silently skip AUDIO - not natively supported by Gemini
           } else if (kind === 'DOCUMENT') {
-            console.warn('Document content not natively supported by Gemini in this SDK version');
+            // Silently skip DOCUMENT - not natively supported by Gemini
           }
         }
       }

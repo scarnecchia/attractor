@@ -19,7 +19,7 @@ export function describeForEachProvider(
   name: string,
   fn: (provider: Readonly<TestProvider>) => void,
 ): void {
-  describe.each(PROVIDERS)(name, (provider: TestProvider) => {
+  describe.each(PROVIDERS)(`${name} [%s]`, (provider: TestProvider) => {
     fn(provider);
   });
 }

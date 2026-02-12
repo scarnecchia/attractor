@@ -25,6 +25,7 @@ export class OpenAIAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: 'openai',
     });
 
     return translateResponse(result.body as Record<string, unknown>);
@@ -40,6 +41,7 @@ export class OpenAIAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: 'openai',
     });
 
     const sseStream = createSSEStream(response);

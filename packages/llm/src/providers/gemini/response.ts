@@ -65,6 +65,12 @@ export function translateResponse(
     finishReason = 'stop';
   }
 
+  // Check if any tool calls were found
+  const hasToolCalls = contentParts.some(p => p.kind === 'TOOL_CALL');
+  if (hasToolCalls) {
+    finishReason = 'tool_calls';
+  }
+
   return {
     id,
     model,

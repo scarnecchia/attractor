@@ -26,6 +26,7 @@ export class OpenAICompatibleAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: this.name,
     });
 
     return translateResponse(result.body as Record<string, unknown>);
@@ -41,6 +42,7 @@ export class OpenAICompatibleAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: this.name,
     });
 
     const sseStream = createSSEStream(response);

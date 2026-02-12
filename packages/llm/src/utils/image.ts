@@ -34,18 +34,24 @@ export async function resolveImageContent(
 
   const imageContent = content as ImageData;
 
-  if (imageContent.data !== null || imageContent.url !== null) {
+  if (imageContent.data !== null) {
     return content;
   }
 
-  if (!isFilePath(filePath)) {
+  // Check if imageContent.url is a file path
+  let pathToRead = filePath;
+  if (!pathToRead && imageContent.url && isFilePath(imageContent.url)) {
+    pathToRead = imageContent.url;
+  }
+
+  if (!pathToRead) {
     return content;
   }
 
   try {
-    const fileBuffer = await readFile(filePath);
+    const fileBuffer = await readFile(pathToRead);
     const base64Data = fileBuffer.toString('base64');
-    const mediaType = getMediaType(filePath);
+    const mediaType = getMediaType(pathToRead);
 
     return {
       kind: 'IMAGE',

@@ -41,6 +41,27 @@ export class StreamAccumulator {
   private model: string = '';
 
   /**
+   * Parse tool call arguments from accumulated JSON string parts.
+   */
+  private parseToolCallArgs(toolCallId: string): Record<string, unknown> {
+    const toolCall = this.toolCalls.get(toolCallId);
+    if (!toolCall) {
+      return {};
+    }
+
+    let args: Record<string, unknown> = {};
+    const argsJson = toolCall.argsParts.join('');
+    if (argsJson) {
+      try {
+        args = JSON.parse(argsJson) as Record<string, unknown>;
+      } catch {
+        // If JSON parsing fails, keep empty args
+      }
+    }
+    return args;
+  }
+
+  /**
    * Process a stream event, accumulating its data.
    */
   process(event: StreamEvent): void {
@@ -98,15 +119,7 @@ export class StreamAccumulator {
   getToolCalls(): Array<ToolCall> {
     const toolCalls: Array<ToolCall> = [];
     for (const [toolCallId, toolCall] of this.toolCalls) {
-      let args: Record<string, unknown> = {};
-      const argsJson = toolCall.argsParts.join('');
-      if (argsJson) {
-        try {
-          args = JSON.parse(argsJson) as Record<string, unknown>;
-        } catch {
-          // If JSON parsing fails, keep empty args
-        }
-      }
+      const args = this.parseToolCallArgs(toolCallId);
       toolCalls.push({
         toolCallId,
         toolName: toolCall.toolName,
@@ -142,16 +155,7 @@ export class StreamAccumulator {
 
     // Add tool calls if any
     for (const [toolCallId, toolCall] of this.toolCalls) {
-      let args: Record<string, unknown> = {};
-      const argsJson = toolCall.argsParts.join('');
-      if (argsJson) {
-        try {
-          args = JSON.parse(argsJson) as Record<string, unknown>;
-        } catch {
-          // If JSON parsing fails, keep empty args
-        }
-      }
-
+      const args = this.parseToolCallArgs(toolCallId);
       content.push({
         kind: 'TOOL_CALL',
         toolCallId,

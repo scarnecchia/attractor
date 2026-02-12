@@ -25,6 +25,7 @@ export class GeminiAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: 'gemini',
     });
 
     return translateResponse(result.body as Record<string, unknown>, toolCallIdMap);
@@ -40,6 +41,7 @@ export class GeminiAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: 'gemini',
     });
 
     const sseStream = createSSEStream(response);

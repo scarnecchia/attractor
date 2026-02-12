@@ -337,7 +337,7 @@ describe('OpenAI Adapter', () => {
               type: 'function_call',
               call_id: 'call-456',
               name: 'test_tool',
-              arguments: { param: 'value' },
+              arguments: JSON.stringify({ param: 'value' }),
             },
           ],
           usage: { input_tokens: 10, output_tokens: 5 },

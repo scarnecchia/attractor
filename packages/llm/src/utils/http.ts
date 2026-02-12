@@ -9,6 +9,7 @@ export type FetchOptions = {
   readonly body?: unknown;
   readonly timeout?: TimeoutConfig;
   readonly signal?: AbortSignal;
+  readonly provider?: string;
 };
 
 export type FetchResult = {
@@ -62,6 +63,7 @@ export async function fetchWithTimeout(
     body: bodyData,
     timeout,
     signal: externalSignal,
+    provider = 'unknown',
   } = options;
 
   if (externalSignal?.aborted) {
@@ -101,7 +103,7 @@ export async function fetchWithTimeout(
       throw mapHttpError({
         statusCode: response.status,
         body: text,
-        provider: 'unknown',
+        provider,
         headers: response.headers,
         raw: text,
       });
@@ -134,6 +136,7 @@ export async function fetchStream(
     body: bodyData,
     timeout,
     signal: externalSignal,
+    provider = 'unknown',
   } = options;
 
   if (externalSignal?.aborted) {
@@ -173,7 +176,7 @@ export async function fetchStream(
       throw mapHttpError({
         statusCode: response.status,
         body: text,
-        provider: 'unknown',
+        provider,
         headers: response.headers,
         raw: text,
       });

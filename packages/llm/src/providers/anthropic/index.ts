@@ -25,6 +25,7 @@ export class AnthropicAdapter implements ProviderAdapter {
       body,
       timeout: request.timeout,
       signal: request.signal,
+      provider: 'anthropic',
     });
 
     return translateResponse(result.body as Record<string, unknown>);
@@ -41,6 +42,7 @@ export class AnthropicAdapter implements ProviderAdapter {
       body: bodyWithStream,
       timeout: request.timeout,
       signal: request.signal,
+      provider: 'anthropic',
     });
 
     const sseStream = createSSEStream(response);

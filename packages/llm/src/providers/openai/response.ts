@@ -29,11 +29,18 @@ export function translateResponse(raw: Record<string, unknown>): LLMResponse {
           }
         }
       } else if (type === 'function_call') {
+        const argsStr = (item['arguments'] as string) || '{}';
+        let args: Record<string, unknown> = {};
+        try {
+          args = JSON.parse(argsStr) as Record<string, unknown>;
+        } catch {
+          // keep empty
+        }
         content.push({
           kind: 'TOOL_CALL',
           toolCallId: (item['call_id'] as string) || '',
           toolName: (item['name'] as string) || '',
-          args: (item['arguments'] as Record<string, unknown>) || {},
+          args,
         });
       }
     }

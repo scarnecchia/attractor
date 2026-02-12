@@ -9,6 +9,7 @@ export async function* translateStream(
   let streamStartEmitted = false;
   let streamId = '';
   let streamModel = '';
+  let hasToolCalls = false;
   let accumulatedUsage = {
     inputTokens: 0,
     outputTokens: 0,
@@ -62,6 +63,7 @@ export async function* translateStream(
               text,
             };
           } else if (functionCall) {
+            hasToolCalls = true;
             const toolCallId = randomUUID();
             const toolName = (functionCall['name'] as string) || 'unknown';
 
@@ -106,6 +108,11 @@ export async function* translateStream(
           finishReason = 'content_filter';
         } else if (rawFinishReason === 'STOP') {
           finishReason = 'stop';
+        }
+
+        // Check if tool calls were generated
+        if (hasToolCalls) {
+          finishReason = 'tool_calls';
         }
 
         yield {
