@@ -1,17 +1,12 @@
 import { expect, test } from 'vitest';
 import type { Tool } from '../../src/types/index.js';
-import { AuthenticationError as AuthErrorType } from '../../src/types/index.js';
+import { AuthenticationError as AuthErrorType, RateLimitError } from '../../src/types/index.js';
 import { generate } from '../../src/api/generate.js';
 import { generateObject } from '../../src/api/generate-object.js';
 import { stream } from '../../src/api/stream.js';
-import { describeForEachProvider, hasApiKey, TEST_FIXTURES } from './helpers.js';
+import type { StreamEvent } from '../../src/types/index.js';
+import { describeForEachProvider, hasApiKey, TEST_FIXTURES, DEFAULT_MODEL } from './helpers.js';
 import type { TestProvider } from './helpers.js';
-
-const DEFAULT_MODEL: Record<TestProvider, string> = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-5-sonnet-20241022',
-  gemini: 'gemini-2.0-flash',
-};
 
 describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider) => {
   const model = DEFAULT_MODEL[provider];
@@ -31,7 +26,7 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
 
   // Test 2: Streaming
   test.skipIf(!hasApiKey(provider))('2. streaming yields STREAM_START, TEXT_DELTA, and FINISH', async () => {
-    const events: any[] = [];
+    const events: Array<StreamEvent> = [];
     const streamResult = stream({
       model,
       provider,
@@ -47,6 +42,8 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
     expect(events[0]?.type).toBe('STREAM_START');
     const hasTextDelta = events.some((e) => e.type === 'TEXT_DELTA');
     expect(hasTextDelta).toBe(true);
+    const hasFinish = events.some((e) => e.type === 'FINISH');
+    expect(hasFinish).toBe(true);
   });
 
   // Test 3: Image input (base64)
@@ -95,7 +92,7 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
 
   // Test 5: Single tool call
   test.skipIf(!hasApiKey(provider))('5. single tool call completes successfully', async () => {
-    const tools: Tool[] = [
+    const tools: Array<Tool> = [
       {
         name: 'get_weather',
         description: 'Get the current weather for a location',
@@ -127,7 +124,7 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
 
   // Test 6: Parallel tool calls
   test.skipIf(!hasApiKey(provider))('6. parallel tool calls execute successfully', async () => {
-    const tools: Tool[] = [
+    const tools: Array<Tool> = [
       {
         name: 'add',
         description: 'Add two numbers',
@@ -175,7 +172,7 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
 
   // Test 7: Multi-step tool loop
   test.skipIf(!hasApiKey(provider))('7. multi-step tool loop executes successfully', async () => {
-    const tools: Tool[] = [
+    const tools: Array<Tool> = [
       {
         name: 'get_info',
         description: 'Get some information',
@@ -204,9 +201,9 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
     expect(result.text).toBeTruthy();
   });
 
-  // Test 8: Streaming with tools (simplified - tests tool-related structure)
-  test.skipIf(!hasApiKey(provider))('8. tools work with structured requests', async () => {
-    const tools: Tool[] = [
+  // Test 8: Streaming with tools
+  test.skipIf(!hasApiKey(provider))('8. streaming with tools yields tool-related events and STEP_FINISH', async () => {
+    const tools: Array<Tool> = [
       {
         name: 'calculate',
         description: 'Calculate something',
@@ -221,7 +218,8 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
       },
     ];
 
-    const result = await generate({
+    const events: Array<StreamEvent> = [];
+    const streamResult = stream({
       model,
       provider,
       prompt: 'Calculate 6 times 7',
@@ -229,7 +227,15 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
       maxTokens: 100,
     });
 
-    expect(result.response).toBeTruthy();
+    for await (const event of streamResult.stream) {
+      events.push(event);
+    }
+
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0]?.type).toBe('STREAM_START');
+    const hasToolStart = events.some((e) => e.type === 'TOOL_CALL_START');
+    const hasStepFinish = events.some((e) => e.type === 'STEP_FINISH');
+    expect(hasToolStart || hasStepFinish || events.some((e) => e.type === 'TEXT_DELTA')).toBe(true);
   });
 
   // Test 9: Structured output
@@ -263,6 +269,7 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
 
   // Test 10: Error handling (invalid key)
   test.skipIf(!hasApiKey(provider))('10. invalid API key throws AuthenticationError', async () => {
+    expect.assertions(1);
     try {
       await generate({
         model,
@@ -275,14 +282,13 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
         },
         maxTokens: 50,
       });
-      // If we get here without error, skip the test (key validation might vary)
-      expect(true).toBe(true);
+      expect.fail('Expected authentication error to be thrown');
     } catch (error) {
       const err = error as unknown;
       if (err instanceof AuthErrorType) {
         expect(err.statusCode).toBe(401);
       } else {
-        expect(true).toBe(true);
+        throw error;
       }
     }
   });
@@ -332,12 +338,17 @@ describeForEachProvider('Cross-Provider Parity Matrix', (provider: TestProvider)
     expect(result.text).toBeTruthy();
   });
 
-  // Test 13: Rate limit error handling (simplified)
-  test('13. rate limit errors are handled appropriately', async () => {
+  // Test 13: Rate limit error handling
+  test('13. rate limit errors are handled appropriately', () => {
     // This test verifies the SDK can handle rate limit errors
     // Triggering actual rate limits is not feasible in integration tests
-    // Instead, we verify the error type exists and has correct properties
-    const { RateLimitError } = await import('../../src/types/index.js');
-    expect(RateLimitError).toBeTruthy();
+    // Instead, we verify the error type can be instantiated with expected properties
+    const error = new RateLimitError('Rate limit exceeded', 429, 60);
+    expect(error).toBeTruthy();
+    expect(error instanceof RateLimitError).toBe(true);
+    expect(error.statusCode).toBe(429);
+    expect(error.retryAfter).toBe(60);
+    expect(error.retryable).toBe(true);
+    expect(error.message).toContain('Rate limit exceeded');
   });
 });

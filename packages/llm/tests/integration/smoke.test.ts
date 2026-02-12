@@ -4,14 +4,8 @@ import { AuthenticationError as AuthErrorType } from '../../src/types/index.js';
 import { generate } from '../../src/api/generate.js';
 import { generateObject } from '../../src/api/generate-object.js';
 import { stream } from '../../src/api/stream.js';
-import { PROVIDERS, hasApiKey, TEST_FIXTURES } from './helpers.js';
+import { PROVIDERS, hasApiKey, TEST_FIXTURES, DEFAULT_MODEL } from './helpers.js';
 import type { TestProvider } from './helpers.js';
-
-const DEFAULT_MODEL: Record<TestProvider, string> = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-5-sonnet-20241022',
-  gemini: 'gemini-2.0-flash',
-};
 
 // Get the first provider with a valid API key
 function getFirstAvailableProvider(): TestProvider | null {
@@ -95,7 +89,7 @@ describe('End-to-End Smoke Test', () => {
 
   // Scenario 4: Tool calling with parallel execution
   test('Scenario 4: Tool calling with parallel execution', { skip: !canRun }, async () => {
-    const tools: Tool[] = [
+    const tools: Array<Tool> = [
       {
         name: 'add',
         description: 'Add two numbers',
@@ -178,6 +172,7 @@ describe('End-to-End Smoke Test', () => {
 
   // Scenario 6: Error handling
   test('Scenario 6: Invalid API key throws AuthenticationError', { skip: !canRun }, async () => {
+    expect.assertions(1);
     try {
       await generate({
         model: model!,
@@ -190,16 +185,13 @@ describe('End-to-End Smoke Test', () => {
         },
         maxTokens: 50,
       });
-      // If we get here without error, the test should still pass
-      // (key validation might vary by provider)
-      expect(true).toBe(true);
+      expect.fail('Expected authentication error to be thrown');
     } catch (error) {
       const err = error as unknown;
       if (err instanceof AuthErrorType) {
         expect(err.statusCode).toBe(401);
       } else {
-        // Other errors are acceptable, we're checking the happy path
-        expect(true).toBe(true);
+        throw error;
       }
     }
   });

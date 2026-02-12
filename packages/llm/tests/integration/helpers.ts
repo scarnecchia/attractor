@@ -1,5 +1,5 @@
-import { describe, test } from 'vitest';
-import { Client } from '../../src/client/index.js';
+import { describe } from 'vitest';
+import type { StreamEvent } from '../../src/types/index.js';
 import { OpenAIAdapter } from '../../src/providers/openai/index.js';
 import { AnthropicAdapter } from '../../src/providers/anthropic/index.js';
 import { GeminiAdapter } from '../../src/providers/gemini/index.js';
@@ -13,7 +13,7 @@ const PROVIDER_ENV_VARS: Record<TestProvider, string> = {
   gemini: 'GEMINI_API_KEY',
 };
 
-const PROVIDER_ADAPTER_FACTORIES: Record<TestProvider, (apiKey: string) => any> = {
+const PROVIDER_ADAPTER_FACTORIES: Record<TestProvider, (apiKey: string) => OpenAIAdapter | AnthropicAdapter | GeminiAdapter> = {
   openai: (apiKey: string) => new OpenAIAdapter(apiKey),
   anthropic: (apiKey: string) => new AnthropicAdapter(apiKey),
   gemini: (apiKey: string) => new GeminiAdapter(apiKey),
@@ -25,35 +25,20 @@ export function hasApiKey(provider: TestProvider): boolean {
   return !!apiKey;
 }
 
-export function createTestClient(): Client {
-  const adapters: Record<string, any> = {};
-  let hasAnyAdapter = false;
-
-  for (const provider of PROVIDERS) {
-    const envVar = PROVIDER_ENV_VARS[provider];
-    const apiKey = process.env[envVar];
-
-    if (apiKey) {
-      adapters[provider] = PROVIDER_ADAPTER_FACTORIES[provider](apiKey);
-      hasAnyAdapter = true;
-    }
-  }
-
-  if (!hasAnyAdapter) {
-    throw new Error('No API keys found. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY');
-  }
-
-  return new Client({ providers: adapters });
-}
-
 export function describeForEachProvider(
   name: string,
-  fn: (provider: TestProvider) => void,
+  fn: (provider: Readonly<TestProvider>) => void,
 ): void {
   describe.each(PROVIDERS)(name, (provider: TestProvider) => {
     fn(provider);
   });
 }
+
+export const DEFAULT_MODEL: Readonly<Record<TestProvider, string>> = {
+  openai: 'gpt-4o-mini',
+  anthropic: 'claude-3-5-sonnet-20241022',
+  gemini: 'gemini-2.0-flash',
+};
 
 // Test fixtures
 export const TEST_FIXTURES = {
@@ -92,4 +77,4 @@ export const TEST_FIXTURES = {
   // Minimal 1x1 transparent PNG in base64
   base64TestImage:
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-};
+} as const;

@@ -1,17 +1,11 @@
 import { expect, test, describe } from 'vitest';
 import { generate } from '../../src/api/generate.js';
-import { hasApiKey } from './helpers.js';
+import { hasApiKey, DEFAULT_MODEL } from './helpers.js';
 import type { TestProvider } from './helpers.js';
-
-const DEFAULT_MODEL: Record<TestProvider, string> = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-5-sonnet-20241022',
-  gemini: 'gemini-2.0-flash',
-};
 
 // Deterministic large system prompt for caching tests (~2000 tokens of text)
 const LARGE_SYSTEM_PROMPT = `You are a helpful AI assistant. ${
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(40)
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(100)
 }
 
 Respond to user queries with accurate, helpful information. Focus on clarity and correctness. When the user asks questions, provide detailed answers based on the context provided.
