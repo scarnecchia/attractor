@@ -199,8 +199,10 @@ describe('OpenAI profile', () => {
     it('apply_patch should have string parameter', () => {
       const profile = createOpenAIProfile();
       const tool = profile.toolRegistry.get('apply_patch');
-      const params = tool!.definition.parameters;
-      expect(params['properties']['patch']['type']).toBe('string');
+      const params = tool!.definition.parameters as Record<string, unknown>;
+      const properties = params['properties'] as Record<string, unknown>;
+      const patchDef = properties['patch'] as Record<string, unknown>;
+      expect(patchDef['type']).toBe('string');
     });
 
     it('read_file should have file_path parameter', () => {

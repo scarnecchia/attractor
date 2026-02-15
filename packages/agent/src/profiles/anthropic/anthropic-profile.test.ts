@@ -111,7 +111,10 @@ describe('Anthropic profile', () => {
     it('should describe uniqueness requirement', () => {
       const profile = createAnthropicProfile();
       const tool = profile.toolRegistry.get('edit_file');
-      const oldStringDesc = tool!.definition.parameters['properties']['old_string']['description'];
+      const params = tool!.definition.parameters as Record<string, unknown>;
+      const properties = params['properties'] as Record<string, unknown>;
+      const oldStringDef = properties['old_string'] as Record<string, unknown>;
+      const oldStringDesc = oldStringDef['description'] as string;
       expect(oldStringDesc).toContain('unique');
     });
   });
@@ -233,9 +236,11 @@ describe('Anthropic profile', () => {
     it('edit_file should have replace_all optional parameter', () => {
       const profile = createAnthropicProfile();
       const tool = profile.toolRegistry.get('edit_file');
-      const params = tool!.definition.parameters;
-      expect(params['properties']).toHaveProperty('replace_all');
-      expect(params['properties']['replace_all']['type']).toBe('boolean');
+      const params = tool!.definition.parameters as Record<string, unknown>;
+      const properties = params['properties'] as Record<string, unknown>;
+      expect(properties).toHaveProperty('replace_all');
+      const replaceAllDef = properties['replace_all'] as Record<string, unknown>;
+      expect(replaceAllDef['type']).toBe('boolean');
     });
 
     it('definitions() should return all profile tools', () => {
