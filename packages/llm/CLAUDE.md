@@ -2,7 +2,7 @@
 
 > Unified LLM SDK -- provider-agnostic interface for OpenAI, Anthropic, Gemini, and OpenAI-compatible endpoints.
 
-Freshness: 2026-02-12
+Freshness: 2026-02-15
 
 ## Purpose
 
@@ -57,6 +57,7 @@ Canonical request format (`src/types/request.ts`). All fields except `model` are
 - `model` (required), `provider`, `messages`, `prompt`, `system`
 - `tools`, `toolChoice`, `maxTokens`, `temperature`, `topP`, `stopSequences`
 - `responseFormat`, `timeout`, `signal`, `maxToolRounds`
+- `reasoningEffort` -- `'low' | 'medium' | 'high'` (maps to provider-specific thinking/reasoning config)
 - `providerOptions` -- `Record<string, Record<string, unknown>>` for provider-specific passthrough
 
 `prompt` and `messages` are mutually exclusive (ValidationError if both set).
@@ -69,6 +70,13 @@ Canonical response format (`src/types/response.ts`):
 - `finishReason`: `'stop' | 'length' | 'tool_calls' | 'content_filter' | 'error'`
 - `usage`: `{ inputTokens, outputTokens, totalTokens, reasoningTokens, cacheReadTokens, cacheWriteTokens }`
 - `rateLimitInfo`, `warnings`, `steps`, `providerMetadata`
+
+### Response Utility Functions
+
+Convenience extractors exported from `src/types/response.ts`:
+- `responseText(response)` -- concatenates all TEXT content parts
+- `responseToolCalls(response)` -- extracts TOOL_CALL parts as `{ toolCallId, toolName, args }[]`
+- `responseReasoning(response)` -- concatenates all THINKING content parts
 
 ### ContentPart Discriminated Union
 
