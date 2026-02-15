@@ -23,6 +23,15 @@ export type SubAgentMap = {
   readonly list: () => ReadonlyArray<SubAgentHandle>;
 };
 
+/**
+ * Internal API for tools to update subagent status and results.
+ * Only exposed for use by subagent tools.
+ */
+export type SubAgentMapInternal = SubAgentMap & {
+  readonly _setStatus: (id: string, status: SubAgentStatus) => void;
+  readonly _setResult: (id: string, result: SubAgentResult) => void;
+};
+
 export function createSubAgentMap(): SubAgentMap {
   type InternalHandle = {
     id: string;
@@ -99,11 +108,27 @@ export function createSubAgentMap(): SubAgentMap {
     }));
   };
 
+  const setStatus = (id: string, status: SubAgentStatus): void => {
+    const internal = handles.get(id);
+    if (internal) {
+      internal.status = status;
+    }
+  };
+
+  const setResult = (id: string, result: SubAgentResult): void => {
+    const internal = handles.get(id);
+    if (internal) {
+      internal.result = result;
+    }
+  };
+
   return {
     spawn,
     get,
     close,
     closeAll,
     list,
-  };
+    _setStatus: setStatus,
+    _setResult: setResult,
+  } as SubAgentMapInternal;
 }
