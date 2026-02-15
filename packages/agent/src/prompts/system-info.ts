@@ -7,10 +7,10 @@ export type SystemInfo = {
 };
 
 export function getSystemInfo(): SystemInfo {
-  const dateString = new Date().toISOString().split('T')[0];
+  const dateString = new Date().toISOString().split('T')[0] ?? '';
   return {
     platform: platform(),
     osVersion: release(),
-    date: dateString ?? '2026-02-15',
+    date: dateString,
   };
 }
