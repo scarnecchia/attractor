@@ -211,33 +211,33 @@ describe('truncateToolOutput (integration)', () => {
   });
 
   it('should verify default limits match spec', () => {
-    expect(DEFAULT_CHAR_LIMITS.read_file).toBe(50_000);
-    expect(DEFAULT_CHAR_LIMITS.shell).toBe(30_000);
-    expect(DEFAULT_CHAR_LIMITS.grep).toBe(20_000);
-    expect(DEFAULT_CHAR_LIMITS.glob).toBe(20_000);
-    expect(DEFAULT_CHAR_LIMITS.edit_file).toBe(10_000);
-    expect(DEFAULT_CHAR_LIMITS.apply_patch).toBe(10_000);
-    expect(DEFAULT_CHAR_LIMITS.write_file).toBe(1_000);
-    expect(DEFAULT_CHAR_LIMITS.spawn_agent).toBe(20_000);
+    expect(DEFAULT_CHAR_LIMITS['read_file']).toBe(50_000);
+    expect(DEFAULT_CHAR_LIMITS['shell']).toBe(30_000);
+    expect(DEFAULT_CHAR_LIMITS['grep']).toBe(20_000);
+    expect(DEFAULT_CHAR_LIMITS['glob']).toBe(20_000);
+    expect(DEFAULT_CHAR_LIMITS['edit_file']).toBe(10_000);
+    expect(DEFAULT_CHAR_LIMITS['apply_patch']).toBe(10_000);
+    expect(DEFAULT_CHAR_LIMITS['write_file']).toBe(1_000);
+    expect(DEFAULT_CHAR_LIMITS['spawn_agent']).toBe(20_000);
   });
 
   it('should verify default truncation modes', () => {
-    expect(DEFAULT_TRUNCATION_MODES.read_file).toBe('head_tail');
-    expect(DEFAULT_TRUNCATION_MODES.shell).toBe('head_tail');
-    expect(DEFAULT_TRUNCATION_MODES.grep).toBe('tail');
-    expect(DEFAULT_TRUNCATION_MODES.glob).toBe('tail');
-    expect(DEFAULT_TRUNCATION_MODES.edit_file).toBe('tail');
-    expect(DEFAULT_TRUNCATION_MODES.apply_patch).toBe('tail');
-    expect(DEFAULT_TRUNCATION_MODES.write_file).toBe('tail');
-    expect(DEFAULT_TRUNCATION_MODES.spawn_agent).toBe('head_tail');
+    expect(DEFAULT_TRUNCATION_MODES['read_file']).toBe('head_tail');
+    expect(DEFAULT_TRUNCATION_MODES['shell']).toBe('head_tail');
+    expect(DEFAULT_TRUNCATION_MODES['grep']).toBe('tail');
+    expect(DEFAULT_TRUNCATION_MODES['glob']).toBe('tail');
+    expect(DEFAULT_TRUNCATION_MODES['edit_file']).toBe('tail');
+    expect(DEFAULT_TRUNCATION_MODES['apply_patch']).toBe('tail');
+    expect(DEFAULT_TRUNCATION_MODES['write_file']).toBe('tail');
+    expect(DEFAULT_TRUNCATION_MODES['spawn_agent']).toBe('head_tail');
   });
 
   it('should verify default line limits', () => {
-    expect(DEFAULT_LINE_LIMITS.shell).toBe(256);
-    expect(DEFAULT_LINE_LIMITS.grep).toBe(200);
-    expect(DEFAULT_LINE_LIMITS.glob).toBe(500);
-    expect(DEFAULT_LINE_LIMITS.read_file).toBe(null);
-    expect(DEFAULT_LINE_LIMITS.edit_file).toBe(null);
+    expect(DEFAULT_LINE_LIMITS['shell']).toBe(256);
+    expect(DEFAULT_LINE_LIMITS['grep']).toBe(200);
+    expect(DEFAULT_LINE_LIMITS['glob']).toBe(500);
+    expect(DEFAULT_LINE_LIMITS['read_file']).toBe(null);
+    expect(DEFAULT_LINE_LIMITS['edit_file']).toBe(null);
   });
 
   it('should not add extra warning for small shell output', () => {

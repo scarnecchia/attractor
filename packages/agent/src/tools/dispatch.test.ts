@@ -40,7 +40,7 @@ describe('dispatchToolCalls', () => {
             parameters: {},
           },
           executor: async (args) => {
-            const message = args.message as string;
+            const message = args['message'] as string;
             return `Echo: ${message}`;
           },
         },
@@ -58,7 +58,8 @@ describe('dispatchToolCalls', () => {
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0]).toEqual({
+      const result = results[0]!;
+      expect(result).toEqual({
         toolCallId: 'call-1',
         output: 'Echo: hello',
         isError: false,
@@ -157,9 +158,10 @@ describe('dispatchToolCalls', () => {
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0].isError).toBe(true);
-      expect(results[0].output).toContain('Unknown tool: unknown_tool');
-      expect(results[0].output).toContain('known');
+      const result = results[0]!;
+      expect(result.isError).toBe(true);
+      expect(result.output).toContain('Unknown tool: unknown_tool');
+      expect(result.output).toContain('known');
     });
 
     it('should list available tools in error message', async () => {
@@ -185,8 +187,10 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].output).toContain('tool1');
-      expect(results[0].output).toContain('tool2');
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.output).toContain('tool1');
+      expect(result.output).toContain('tool2');
     });
 
     it('should not throw exception, return error result', async () => {
@@ -203,7 +207,8 @@ describe('dispatchToolCalls', () => {
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0].isError).toBe(true);
+      const result = results[0]!;
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -237,8 +242,10 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].isError).toBe(true);
-      expect(results[0].output).toContain('Invalid tool arguments');
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.isError).toBe(true);
+      expect(result.output).toContain('Invalid tool arguments');
     });
 
     it('should return error result if args is an array', async () => {
@@ -265,7 +272,9 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].isError).toBe(true);
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -296,9 +305,10 @@ describe('dispatchToolCalls', () => {
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0].isError).toBe(true);
-      expect(results[0].output).toContain('Tool error in failing_tool');
-      expect(results[0].output).toContain('Execution failed');
+      const result = results[0]!;
+      expect(result.isError).toBe(true);
+      expect(result.output).toContain('Tool error in failing_tool');
+      expect(result.output).toContain('Execution failed');
     });
 
     it('should handle non-Error exceptions', async () => {
@@ -326,8 +336,10 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].isError).toBe(true);
-      expect(results[0].output).toContain('string error');
+      expect(results).toHaveLength(1);
+      const result = results[0]!;
+      expect(result.isError).toBe(true);
+      expect(result.output).toContain('string error');
     });
 
     it('should return error result, not throw', async () => {
@@ -393,8 +405,8 @@ describe('dispatchToolCalls', () => {
       const totalTime = Date.now() - startTotal;
 
       expect(results).toHaveLength(2);
-      expect(results[0].isError).toBe(false);
-      expect(results[1].isError).toBe(false);
+      expect(results[0]!.isError).toBe(false);
+      expect(results[1]!.isError).toBe(false);
 
       expect(totalTime).toBeLessThan(150);
     });
@@ -460,8 +472,8 @@ describe('dispatchToolCalls', () => {
       const results = await dispatchToolCalls(toolCalls, registry, env, true);
 
       expect(results).toHaveLength(2);
-      expect(results[0].isError).toBe(false);
-      expect(results[1].isError).toBe(true);
+      expect(results[0]!.isError).toBe(false);
+      expect(results[1]!.isError).toBe(true);
     });
   });
 
@@ -492,9 +504,9 @@ describe('dispatchToolCalls', () => {
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
       expect(results).toHaveLength(3);
-      expect(results[0].output).toBe('result1');
-      expect(results[1].output).toBe('result2');
-      expect(results[2].output).toBe('result3');
+      expect(results[0]!.output).toBe('result1');
+      expect(results[1]!.output).toBe('result2');
+      expect(results[2]!.output).toBe('result3');
     });
 
     it('should preserve tool call IDs in results', async () => {
@@ -513,8 +525,8 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].toolCallId).toBe('abc-123');
-      expect(results[1].toolCallId).toBe('xyz-789');
+      expect(results[0]!.toolCallId).toBe('abc-123');
+      expect(results[1]!.toolCallId).toBe('xyz-789');
     });
 
     it('should handle mixed success and failure', async () => {
@@ -540,9 +552,9 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].isError).toBe(false);
-      expect(results[1].isError).toBe(true);
-      expect(results[2].isError).toBe(false);
+      expect(results[0]!.isError).toBe(false);
+      expect(results[1]!.isError).toBe(true);
+      expect(results[2]!.isError).toBe(false);
     });
   });
 
@@ -594,7 +606,7 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, false);
 
-      expect(results[0].isError).toBe(false);
+      expect(results[0]!.isError).toBe(false);
       expect(capturedArgs).toEqual({
         file_path: '/path/to/file.ts',
         old_string: 'const x = 5;',
@@ -661,8 +673,8 @@ describe('dispatchToolCalls', () => {
 
       const results = await dispatchToolCalls(toolCalls, registry, env, true);
 
-      expect(results[0].toolCallId).toBe('parallel-call-1');
-      expect(results[1].toolCallId).toBe('parallel-call-2');
+      expect(results[0]!.toolCallId).toBe('parallel-call-1');
+      expect(results[1]!.toolCallId).toBe('parallel-call-2');
     });
   });
 });
