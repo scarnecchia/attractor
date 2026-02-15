@@ -116,13 +116,13 @@ export function createLocalExecutionEnvironment(
   async function listDirectoryImpl(path: string, depth: number = 1): Promise<ReadonlyArray<DirEntry>> {
     const resolvedPath = resolve(workingDir, path);
 
-    async function recursiveList(currentPath: string, currentDepth: number): Promise<DirEntry[]> {
+    async function recursiveList(currentPath: string, currentDepth: number): Promise<Array<DirEntry>> {
       if (currentDepth < 0) {
         return [];
       }
 
       const entries = await readdir(currentPath, { withFileTypes: true });
-      const results: DirEntry[] = [];
+      const results: Array<DirEntry> = [];
 
       for (const entry of entries) {
         const entryPath = resolve(currentPath, entry.name);
@@ -240,6 +240,35 @@ export function createLocalExecutionEnvironment(
     });
   }
 
+  async function regexGrep(
+    pattern: string,
+    filePath: string,
+    caseSensitive: boolean,
+    maxResults: number,
+    contextLines: number,
+  ): Promise<string> {
+    const rawContent = await readFile(filePath, 'utf-8');
+    const lines = rawContent.split('\n');
+
+    const flags = caseSensitive ? '' : 'i';
+    const regex = new RegExp(pattern, flags);
+
+    const results: Array<string> = [];
+    const resultLimit = maxResults === Infinity ? lines.length : maxResults;
+
+    for (let i = 0; i < lines.length && results.length < resultLimit; i++) {
+      const line = lines[i];
+      if (line && regex.test(line)) {
+        const start = Math.max(0, i - contextLines);
+        const end = Math.min(lines.length, i + contextLines + 1);
+        const contextBlock = lines.slice(start, end).join('\n');
+        results.push(contextBlock);
+      }
+    }
+
+    return results.join('\n---\n');
+  }
+
   async function grepImpl(pattern: string, path: string, options?: GrepOptions): Promise<string> {
     const resolvedPath = resolve(workingDir, path);
     const caseSensitive = options?.caseSensitive ?? true;
@@ -266,31 +295,23 @@ export function createLocalExecutionEnvironment(
         stdio: ['pipe', 'pipe', 'ignore'],
       });
       return result;
-    } catch {
-      // ripgrep not available, fall back to regex
-    }
-
-    // Fallback: regex-based search on raw file content
-    const rawContent = await readFile(resolvedPath, 'utf-8');
-    const lines = rawContent.split('\n');
-
-    const flags = caseSensitive ? '' : 'i';
-    const regex = new RegExp(pattern, flags);
-
-    const results: string[] = [];
-    const resultLimit = maxResults === Infinity ? lines.length : maxResults;
-
-    for (let i = 0; i < lines.length && results.length < resultLimit; i++) {
-      const line = lines[i];
-      if (line && regex.test(line)) {
-        const start = Math.max(0, i - contextLines);
-        const end = Math.min(lines.length, i + contextLines + 1);
-        const contextBlock = lines.slice(start, end).join('\n');
-        results.push(contextBlock);
+    } catch (err) {
+      // Differentiate between "rg not installed" and "rg found no matches"
+      // rg not installed: ENOENT error or exit code 127
+      // rg found no matches: exit code 1 - return empty result directly
+      if (err instanceof Error) {
+        const isNotInstalled =
+          (err as NodeJS.ErrnoException).code === 'ENOENT' ||
+          (err as { status?: number }).status === 127;
+        if (!isNotInstalled) {
+          // rg found no matches (exit code 1), return empty result
+          return '';
+        }
       }
+      // ripgrep not installed, fall back to regex
     }
 
-    return results.join('\n---\n');
+    return regexGrep(pattern, resolvedPath, caseSensitive, maxResults, contextLines);
   }
 
   async function globImpl(pattern: string, path: string): Promise<ReadonlyArray<string>> {

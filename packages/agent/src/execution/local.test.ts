@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -266,6 +266,89 @@ final line`,
       const result = await env.grep('line', 'search.txt', { maxResults: 1 });
 
       expect(result.split('---').length).toBeLessThanOrEqual(2);
+    });
+
+    describe('regex fallback (when ripgrep not available)', () => {
+      it('should find matching lines with regex fallback', async () => {
+        await env.writeFile(
+          'fallback.txt',
+          `apple
+banana
+apple pie
+grape`,
+        );
+
+        const result = await env.grep('apple', 'fallback.txt');
+        expect(result).toContain('apple');
+      });
+
+      it('should handle case insensitive matching in fallback', async () => {
+        await env.writeFile(
+          'fallback.txt',
+          `HELLO
+world
+Hello there`,
+        );
+
+        const resultCase = await env.grep('hello', 'fallback.txt', { caseSensitive: true });
+        const resultNoCase = await env.grep('hello', 'fallback.txt', { caseSensitive: false });
+
+        expect(resultCase).not.toContain('HELLO');
+        expect(resultNoCase).toContain('HELLO');
+        expect(resultNoCase).toContain('Hello');
+      });
+
+      it('should respect maxResults in fallback', async () => {
+        await env.writeFile(
+          'fallback.txt',
+          Array(10)
+            .fill('test line')
+            .join('\n'),
+        );
+
+        const result = await env.grep('test', 'fallback.txt', { maxResults: 3 });
+        const matches = result.split('---').filter((m) => m.trim().length > 0);
+
+        expect(matches.length).toBeLessThanOrEqual(3);
+      });
+
+      it('should include context lines in fallback', async () => {
+        await env.writeFile(
+          'fallback.txt',
+          `line1
+line2
+target
+line4
+line5`,
+        );
+
+        const result = await env.grep('target', 'fallback.txt', { contextLines: 1 });
+
+        expect(result).toContain('line2');
+        expect(result).toContain('target');
+        expect(result).toContain('line4');
+      });
+
+      it('should return empty string for no matches in fallback', async () => {
+        await env.writeFile(
+          'fallback.txt',
+          `apple
+banana
+grape`,
+        );
+
+        const result = await env.grep('xyz123', 'fallback.txt');
+
+        expect(result).toBe('');
+      });
+
+      it('should handle empty file in fallback', async () => {
+        await env.writeFile('empty.txt', '');
+
+        const result = await env.grep('anything', 'empty.txt');
+
+        expect(result).toBe('');
+      });
     });
   });
 
