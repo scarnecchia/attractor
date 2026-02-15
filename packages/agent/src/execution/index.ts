@@ -1,1 +1,1 @@
-// placeholder — populated in subsequent phases
+export * from './local.js';
