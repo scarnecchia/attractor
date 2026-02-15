@@ -1,4 +1,4 @@
-import type { ContentPart } from './content.js';
+import type { ContentPart, TextData, ToolCallData, ThinkingData } from './content.js';
 import type { ToolCall, ToolResult } from './tool.js';
 
 export type FinishReason = 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'error';
@@ -66,3 +66,33 @@ export type LLMResponse = {
   readonly steps: ReadonlyArray<StepResult>;
   readonly providerMetadata: Record<string, unknown>;
 };
+
+export function responseText(response: Readonly<LLMResponse>): string {
+  return response.content
+    .filter((part): part is TextData => part.kind === 'TEXT')
+    .map((part) => part.text)
+    .join('');
+}
+
+export type ExtractedToolCall = {
+  readonly toolCallId: string;
+  readonly toolName: string;
+  readonly args: Record<string, unknown>;
+};
+
+export function responseToolCalls(response: Readonly<LLMResponse>): ReadonlyArray<ExtractedToolCall> {
+  return response.content
+    .filter((part): part is ToolCallData => part.kind === 'TOOL_CALL')
+    .map((part) => ({
+      toolCallId: part.toolCallId,
+      toolName: part.toolName,
+      args: part.args,
+    }));
+}
+
+export function responseReasoning(response: Readonly<LLMResponse>): string {
+  return response.content
+    .filter((part): part is ThinkingData => part.kind === 'THINKING')
+    .map((part) => part.text)
+    .join('');
+}
