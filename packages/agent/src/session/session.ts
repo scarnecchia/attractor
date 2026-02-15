@@ -19,6 +19,11 @@ import type { LoopDetector } from './loop-detection.js';
 import type { ContextTracker } from './context-tracking.js';
 import { createSubAgentMap } from '../subagent/subagent.js';
 import { createSubAgentTools, type SubAgentToolContext } from '../subagent/tools.js';
+import { buildSystemPrompt } from '../prompts/builder.js';
+import { captureGitContext } from '../prompts/git-context.js';
+import { discoverProjectDocs } from '../prompts/discovery.js';
+import { getSystemInfo } from '../prompts/system-info.js';
+import type { SystemPromptContext } from '../types/index.js';
 
 export type SessionOptions = {
   readonly profile: ProviderProfile;
@@ -50,6 +55,7 @@ export type LoopContext = {
   readonly loopDetector: LoopDetector;
   readonly contextTracker: ContextTracker;
   readonly abortController: AbortController;
+  readonly systemPrompt: string;
 };
 
 export function createSession(options: SessionOptions): Session {
@@ -63,6 +69,7 @@ export function createSession(options: SessionOptions): Session {
   let abortController = new AbortController();
   const subagentMap = createSubAgentMap();
   let isAborting = false;
+  let cachedSystemPrompt: string | null = null;
 
   // Register subagent tools on the profile after creation
   const subAgentContext: SubAgentToolContext = {
@@ -81,6 +88,40 @@ export function createSession(options: SessionOptions): Session {
   // Emit session start immediately
   eventEmitter.emit({ kind: 'SESSION_START', sessionId });
 
+  // Build system prompt once at session creation time (lazy-loaded on first use)
+  const getSystemPrompt = async (): Promise<string> => {
+    if (cachedSystemPrompt !== null) {
+      return cachedSystemPrompt;
+    }
+
+    // Capture git context
+    const gitContext = await captureGitContext(options.environment);
+
+    // Discover project docs
+    const projectDocs = await discoverProjectDocs(options.environment, options.profile.id);
+
+    // Get system info
+    const systemInfo = getSystemInfo();
+
+    // Build SystemPromptContext
+    const promptContext: SystemPromptContext = {
+      platform: systemInfo.platform,
+      osVersion: systemInfo.osVersion,
+      workingDirectory: options.environment.workingDirectory(),
+      gitBranch: gitContext.branch,
+      gitStatus: gitContext.status,
+      gitLog: gitContext.log,
+      date: systemInfo.date,
+      model: options.config.model,
+      projectDocs,
+      userInstruction: options.config.userInstruction ?? null,
+    };
+
+    // Build system prompt using profile's builder
+    cachedSystemPrompt = buildSystemPrompt(options.profile, promptContext);
+    return cachedSystemPrompt;
+  };
+
   const submit = async (input: string): Promise<void> => {
     if (currentState === 'CLOSED') {
       throw new Error('Session is closed');
@@ -98,6 +139,8 @@ export function createSession(options: SessionOptions): Session {
     currentState = 'PROCESSING';
 
     try {
+      const systemPrompt = await getSystemPrompt();
+
       const context: LoopContext = {
         sessionId,
         profile: options.profile,
@@ -110,6 +153,7 @@ export function createSession(options: SessionOptions): Session {
         loopDetector,
         contextTracker,
         abortController,
+        systemPrompt,
       };
 
       await processInput(context);

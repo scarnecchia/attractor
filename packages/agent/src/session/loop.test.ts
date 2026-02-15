@@ -149,6 +149,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       await processInput(context);
@@ -180,6 +181,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       const events: any[] = [];
@@ -230,6 +232,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       const events: any[] = [];
@@ -279,6 +282,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       const events: any[] = [];
@@ -325,6 +329,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       await processInput(context);
@@ -376,6 +381,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       const events: any[] = [];
@@ -434,6 +440,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       const events: any[] = [];
@@ -477,6 +484,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       await processInput(context);
@@ -511,6 +519,7 @@ describe('processInput', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController,
+        systemPrompt: "System prompt",
       };
 
       // Abort before processing

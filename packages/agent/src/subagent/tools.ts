@@ -71,7 +71,8 @@ function createSpawnAgentTool(context: SubAgentToolContext): RegisteredTool {
         ? Number(args['max_turns'])
         : undefined;
 
-      if (context.currentDepth >= DEFAULT_MAX_SUBAGENT_DEPTH) {
+      const maxDepth = context.config.maxSubagentDepth ?? DEFAULT_MAX_SUBAGENT_DEPTH;
+      if (context.currentDepth >= maxDepth) {
         return JSON.stringify({
           error: 'Maximum subagent depth exceeded',
         });
@@ -94,6 +95,7 @@ function createSpawnAgentTool(context: SubAgentToolContext): RegisteredTool {
         environment: context.environment,
         client: context.client,
         config: childConfig,
+        depth: context.currentDepth + 1,
       };
 
       const childSession = createSession(childOptions);

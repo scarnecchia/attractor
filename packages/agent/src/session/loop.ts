@@ -12,6 +12,7 @@ import {
 import type { LoopContext } from './session.js';
 import type { Turn } from '../types/index.js';
 import { dispatchToolCalls, type PendingToolCall, type ToolCallResult } from '../tools/dispatch.js';
+import { truncateToolOutput } from '../truncation/truncate.js';
 
 export async function processInput(context: LoopContext): Promise<void> {
   let toolRoundsThisInput = 0;
@@ -52,9 +53,11 @@ export async function processInput(context: LoopContext): Promise<void> {
     const request: LLMRequest = {
       model: context.config.model,
       provider: context.config.provider,
+      system: context.systemPrompt,
       messages,
       tools,
       signal: context.abortController.signal,
+      ...(context.config.reasoningEffort && { reasoningEffort: context.config.reasoningEffort }),
     };
 
     // Stream from LLM
@@ -213,9 +216,15 @@ export async function processInput(context: LoopContext): Promise<void> {
         context.loopDetector.record(toolCall.toolName, argsHash);
       }
 
-      // Truncate output for LLM
-      const maxOutputLength = context.config.toolOutputLimits?.[toolCall?.toolName ?? ''] ?? 2000;
-      const truncatedOutput = result.output.substring(0, maxOutputLength);
+      // Truncate output for LLM using truncation pipeline
+      const truncatedOutput = truncateToolOutput(
+        result.output,
+        toolCall?.toolName ?? 'unknown',
+        {
+          toolOutputLimits: context.config.toolOutputLimits,
+          toolLineLimits: context.config.toolLineLimits,
+        },
+      );
 
       toolResultEntries.push({
         toolCallId: result.toolCallId,

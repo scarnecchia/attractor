@@ -125,6 +125,7 @@ describe('Error Handling in Agentic Loop', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       // processInput should throw after emitting ERROR event
@@ -184,6 +185,7 @@ describe('Error Handling in Agentic Loop', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       // processInput should throw after emitting events
@@ -249,6 +251,7 @@ describe('Error Handling in Agentic Loop', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       // processInput should throw after emitting ERROR event
@@ -302,6 +305,7 @@ describe('Error Handling in Agentic Loop', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       // processInput should throw after emitting ERROR event
@@ -354,6 +358,7 @@ describe('Error Handling in Agentic Loop', () => {
         loopDetector: createLoopDetector(),
         contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
+        systemPrompt: "System prompt",
       };
 
       // processInput should throw after emitting ERROR event
