@@ -5,7 +5,7 @@ export type LoopDetector = {
 };
 
 export function createLoopDetector(windowSize: number = 10): LoopDetector {
-  const signatures: string[] = [];
+  const signatures: Array<string> = [];
 
   function getSignature(toolName: string, argsHash: string): string {
     return `${toolName}:${argsHash}`;

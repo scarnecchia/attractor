@@ -8,7 +8,7 @@ export type SessionEventEmitter = {
 };
 
 export function createSessionEventEmitter(): SessionEventEmitter {
-  const buffer: SessionEvent[] = [];
+  const buffer: Array<SessionEvent> = [];
   let waiter: ((result: IteratorResult<SessionEvent> | Error) => void) | null = null;
   let done = false;
   let pendingError: Error | null = null;

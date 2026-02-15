@@ -10,7 +10,7 @@ export async function processInput(context: LoopContext): Promise<void> {
 
   // Count existing turns to know total
   for (const turn of context.history) {
-    if (turn.kind === 'assistant' || turn.kind === 'tool_results') {
+    if (turn.kind === 'assistant') {
       totalTurnsThisSession++;
     }
   }
@@ -48,7 +48,6 @@ export async function processInput(context: LoopContext): Promise<void> {
 
     // Stream from LLM
     const accumulator = new StreamAccumulator();
-    let streamError: Error | null = null;
 
     try {
       for await (const event of context.client.stream(request)) {
@@ -149,20 +148,6 @@ export async function processInput(context: LoopContext): Promise<void> {
         context.loopDetector.record(toolCall.toolName, argsHash);
       }
 
-      // Check for loop detection
-      const loopWarning = context.loopDetector.check();
-      if (loopWarning) {
-        context.eventEmitter.emit({
-          kind: 'LOOP_DETECTION',
-          message: loopWarning,
-        });
-
-        // Inject steering turn with warning
-        context.steeringQueue.steer(
-          `Loop detection: ${loopWarning}. Please adjust your approach or provide more context.`,
-        );
-      }
-
       // Truncate output for LLM
       const maxOutputLength = context.config.toolOutputLimits?.[toolCall?.toolName ?? ''] ?? 2000;
       const truncatedOutput = result.output.substring(0, maxOutputLength);
@@ -172,6 +157,20 @@ export async function processInput(context: LoopContext): Promise<void> {
         output: truncatedOutput,
         isError: result.isError,
       });
+    }
+
+    // Check for loop detection (once per round, not per result)
+    const loopWarning = context.loopDetector.check();
+    if (loopWarning) {
+      context.eventEmitter.emit({
+        kind: 'LOOP_DETECTION',
+        message: loopWarning,
+      });
+
+      // Inject steering turn with warning
+      context.steeringQueue.steer(
+        `Loop detection: ${loopWarning}. Please adjust your approach or provide more context.`,
+      );
     }
 
     // Append ToolResultsTurn to history
