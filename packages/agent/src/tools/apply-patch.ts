@@ -29,7 +29,7 @@ export type PatchOperation =
 // Parser Implementation
 // ============================================================================
 
-export function parsePatch(text: string): PatchOperation[] | string {
+export function parsePatch(text: string): Array<PatchOperation> | string {
   const beginIdx = text.indexOf('*** Begin Patch');
   if (beginIdx === -1) {
     return 'Error: Missing "*** Begin Patch" marker';
@@ -57,7 +57,7 @@ export function parsePatch(text: string): PatchOperation[] | string {
       const path = line.substring('*** Add File: '.length).trim();
       i++;
 
-      const contentLines: string[] = [];
+      const contentLines: Array<string> = [];
       while (i < lines.length && lines[i]?.startsWith('+')) {
         const contentLine = lines[i];
         if (contentLine) {
@@ -91,12 +91,12 @@ export function parsePatch(text: string): PatchOperation[] | string {
         i++;
       }
 
-      const hunks: Hunk[] = [];
+      const hunks: Array<Hunk> = [];
       while (i < lines.length && lines[i]?.startsWith('@@')) {
         const contextHeader = lines[i] ?? null;
         i++;
 
-        const hunkLines: HunkLine[] = [];
+        const hunkLines: Array<HunkLine> = [];
         while (i < lines.length) {
           const hunkLine = lines[i];
           if (!hunkLine) {
@@ -160,7 +160,7 @@ export function parsePatch(text: string): PatchOperation[] | string {
 // ============================================================================
 
 function matchContext(
-  fileLines: string[],
+  fileLines: Array<string>,
   contextLines: Array<{ text: string; kind: 'context' | 'remove' }>,
 ): number | null {
   // Strategy 1: Exact match
@@ -193,7 +193,7 @@ function matchContext(
 }
 
 function findExactMatch(
-  fileLines: string[],
+  fileLines: Array<string>,
   contextLines: Array<{ text: string; kind: 'context' | 'remove' }>,
 ): number | null {
   if (contextLines.length === 0) return 0;
@@ -217,7 +217,7 @@ function findExactMatch(
 }
 
 function findTrimmedMatch(
-  fileLines: string[],
+  fileLines: Array<string>,
   contextLines: Array<{ text: string; kind: 'context' | 'remove' }>,
 ): number | null {
   if (contextLines.length === 0) return 0;
@@ -251,10 +251,10 @@ function findTrimmedMatch(
 // ============================================================================
 
 async function applyOperations(
-  operations: PatchOperation[],
+  operations: Array<PatchOperation>,
   env: ExecutionEnvironment,
 ): Promise<string> {
-  const results: string[] = [];
+  const results: Array<string> = [];
 
   for (const op of operations) {
     if (op.kind === 'add') {

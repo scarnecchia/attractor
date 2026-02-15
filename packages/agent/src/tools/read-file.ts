@@ -12,6 +12,10 @@ export const readFileExecutor: ToolExecutor = async (args, env) => {
   try {
     const content = await env.readFile(filePath, offset, limit);
     const lines = content.split('\n');
+    // Note: Line numbering reflects the content returned by env.readFile,
+    // starting at 1 for the first line. When offset is used, the line numbers
+    // start at 1 for the first line of the returned content, not the absolute
+    // file position. This is a known limitation matching the spec behavior.
     const numberedLines = lines
       .map((line, index) => `${String(index + 1).padStart(4, ' ')} | ${line}`)
       .join('\n');

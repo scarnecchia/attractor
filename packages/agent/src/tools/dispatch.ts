@@ -77,7 +77,7 @@ async function dispatchSequential(
   registry: ToolRegistry,
   env: ExecutionEnvironment,
 ): Promise<ReadonlyArray<ToolCallResult>> {
-  const results: ToolCallResult[] = [];
+  const results: Array<ToolCallResult> = [];
 
   for (const call of toolCalls) {
     const result = await executeToolCall(call, registry, env);

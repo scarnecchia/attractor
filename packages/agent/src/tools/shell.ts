@@ -12,7 +12,7 @@ export const shellExecutor: ToolExecutor = async (args, env) => {
   try {
     const result = await env.execCommand(command, timeoutMs, workingDir);
 
-    const parts: string[] = [];
+    const parts: Array<string> = [];
 
     if (result.stdout) {
       parts.push(result.stdout);
