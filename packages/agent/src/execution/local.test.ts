@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -268,7 +268,7 @@ final line`,
       expect(result.split('---').length).toBeLessThanOrEqual(2);
     });
 
-    describe('regex fallback (when ripgrep not available)', () => {
+    describe('grep with various inputs', () => {
       it('should find matching lines with regex fallback', async () => {
         await env.writeFile(
           'fallback.txt',
