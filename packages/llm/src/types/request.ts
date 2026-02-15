@@ -19,4 +19,5 @@ export type LLMRequest = {
   readonly signal?: AbortSignal;
   readonly maxToolRounds?: number;
   readonly providerOptions?: Record<string, Record<string, unknown>>;
+  readonly reasoningEffort?: 'low' | 'medium' | 'high';
 };
