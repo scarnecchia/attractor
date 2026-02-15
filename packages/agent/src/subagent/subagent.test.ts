@@ -640,4 +640,126 @@ describe('Subagent Tools', () => {
       }
     });
   });
+
+  describe('Subagent tool registration on profile', () => {
+    it('should register all four subagent tools on profile toolRegistry', () => {
+      const toolRegistry = {
+        get: vi.fn(() => null),
+        register: vi.fn(),
+        unregister: vi.fn(),
+        definitions: vi.fn(() => []),
+        list: vi.fn(() => []),
+      };
+
+      const profileWithRegistry: ProviderProfile = {
+        id: 'openai' as const,
+        displayName: 'OpenAI',
+        defaultModel: 'gpt-4',
+        toolRegistry: toolRegistry as any,
+        supportsParallelToolCalls: false,
+        buildSystemPrompt: () => 'You are helpful.',
+        projectDocFiles: [],
+        defaultCommandTimeout: 5000,
+      };
+
+      const context: SubAgentToolContext = {
+        subagents: subagentMap,
+        environment: mockEnv,
+        profile: profileWithRegistry,
+        client: mockClient,
+        config,
+        currentDepth: 0,
+      };
+
+      const tools = createSubAgentTools(context);
+
+      // Simulate what Session constructor does
+      for (const tool of tools) {
+        profileWithRegistry.toolRegistry.register(tool);
+      }
+
+      // Verify all four tools were registered
+      expect(toolRegistry.register).toHaveBeenCalledTimes(4);
+
+      const calls = toolRegistry.register.mock.calls;
+      const registeredToolNames = calls.map((call: any[]) => call[0].definition.name);
+
+      expect(registeredToolNames).toContain('spawn_agent');
+      expect(registeredToolNames).toContain('send_input');
+      expect(registeredToolNames).toContain('wait');
+      expect(registeredToolNames).toContain('close_agent');
+    });
+
+    it('should preserve original profile tools after subagent registration', () => {
+      const originalTools: Array<RegisteredTool> = [
+        {
+          definition: {
+            name: 'shell',
+            description: 'Execute shell commands',
+            parameters: { type: 'object', properties: {}, required: [] },
+          },
+          executor: async () => 'shell result',
+        },
+        {
+          definition: {
+            name: 'edit_file',
+            description: 'Edit files',
+            parameters: { type: 'object', properties: {}, required: [] },
+          },
+          executor: async () => 'edit result',
+        },
+      ];
+
+      let registeredTools: Array<RegisteredTool> = [...originalTools];
+
+      const toolRegistry = {
+        get: vi.fn(() => null),
+        register: vi.fn((tool: RegisteredTool) => {
+          registeredTools.push(tool);
+        }),
+        unregister: vi.fn(),
+        definitions: vi.fn(() => []),
+        list: vi.fn(() => registeredTools),
+      };
+
+      const profileWithRegistry: ProviderProfile = {
+        id: 'openai' as const,
+        displayName: 'OpenAI',
+        defaultModel: 'gpt-4',
+        toolRegistry: toolRegistry as any,
+        supportsParallelToolCalls: false,
+        buildSystemPrompt: () => 'You are helpful.',
+        projectDocFiles: [],
+        defaultCommandTimeout: 5000,
+      };
+
+      const context: SubAgentToolContext = {
+        subagents: subagentMap,
+        environment: mockEnv,
+        profile: profileWithRegistry,
+        client: mockClient,
+        config,
+        currentDepth: 0,
+      };
+
+      const tools = createSubAgentTools(context);
+
+      // Simulate what Session constructor does
+      for (const tool of tools) {
+        profileWithRegistry.toolRegistry.register(tool);
+      }
+
+      // Verify original tools are still present
+      const allTools = toolRegistry.list();
+      expect(allTools).toHaveLength(6); // 2 original + 4 subagent tools
+
+      const allToolNames = allTools.map((t: RegisteredTool) => t.definition.name);
+      expect(allToolNames).toContain('shell');
+      expect(allToolNames).toContain('edit_file');
+      expect(allToolNames).toContain('spawn_agent');
+      expect(allToolNames).toContain('send_input');
+      expect(allToolNames).toContain('wait');
+      expect(allToolNames).toContain('close_agent');
+    });
+  });
 });

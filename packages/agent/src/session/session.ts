@@ -15,12 +15,15 @@ import { processInput } from './loop.js';
 import type { SessionEventEmitter } from './events.js';
 import type { SteeringQueue } from './steering.js';
 import type { LoopDetector } from './loop-detection.js';
+import { createSubAgentMap } from '../subagent/subagent.js';
+import { createSubAgentTools, type SubAgentToolContext } from '../subagent/tools.js';
 
 export type SessionOptions = {
   readonly profile: ProviderProfile;
   readonly environment: ExecutionEnvironment;
   readonly client: Client;
   readonly config: SessionConfig;
+  readonly depth?: number;
 };
 
 export type Session = {
@@ -54,6 +57,21 @@ export function createSession(options: SessionOptions): Session {
   const steeringQueue = createSteeringQueue();
   const loopDetector = createLoopDetector(options.config.loopDetectionWindow);
   let abortController = new AbortController();
+  const subagentMap = createSubAgentMap();
+
+  // Register subagent tools on the profile after creation
+  const subAgentContext: SubAgentToolContext = {
+    subagents: subagentMap,
+    environment: options.environment,
+    profile: options.profile,
+    client: options.client,
+    config: options.config,
+    currentDepth: options.depth ?? 0,
+  };
+
+  for (const tool of createSubAgentTools(subAgentContext)) {
+    options.profile.toolRegistry.register(tool);
+  }
 
   // Emit session start immediately
   eventEmitter.emit({ kind: 'SESSION_START', sessionId });
