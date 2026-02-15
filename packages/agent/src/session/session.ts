@@ -11,10 +11,12 @@ import type {
 import { createSessionEventEmitter } from './events.js';
 import { createSteeringQueue } from './steering.js';
 import { createLoopDetector } from './loop-detection.js';
+import { createContextTracker } from './context-tracking.js';
 import { processInput } from './loop.js';
 import type { SessionEventEmitter } from './events.js';
 import type { SteeringQueue } from './steering.js';
 import type { LoopDetector } from './loop-detection.js';
+import type { ContextTracker } from './context-tracking.js';
 import { createSubAgentMap } from '../subagent/subagent.js';
 import { createSubAgentTools, type SubAgentToolContext } from '../subagent/tools.js';
 
@@ -46,6 +48,7 @@ export type LoopContext = {
   readonly eventEmitter: SessionEventEmitter;
   readonly steeringQueue: SteeringQueue;
   readonly loopDetector: LoopDetector;
+  readonly contextTracker: ContextTracker;
   readonly abortController: AbortController;
 };
 
@@ -56,6 +59,7 @@ export function createSession(options: SessionOptions): Session {
   const eventEmitter = createSessionEventEmitter();
   const steeringQueue = createSteeringQueue();
   const loopDetector = createLoopDetector(options.config.loopDetectionWindow);
+  const contextTracker = createContextTracker(options.config.contextWindowSize, 0.8);
   let abortController = new AbortController();
   const subagentMap = createSubAgentMap();
 
@@ -87,6 +91,9 @@ export function createSession(options: SessionOptions): Session {
       content: input,
     });
 
+    // Track context usage for user input
+    contextTracker.record(input.length);
+
     currentState = 'PROCESSING';
 
     try {
@@ -100,6 +107,7 @@ export function createSession(options: SessionOptions): Session {
         eventEmitter,
         steeringQueue,
         loopDetector,
+        contextTracker,
         abortController,
       };
 

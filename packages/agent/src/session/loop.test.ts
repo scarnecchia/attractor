@@ -5,6 +5,7 @@ import { processInput } from './loop.js';
 import { createSessionEventEmitter } from './events.js';
 import { createSteeringQueue } from './steering.js';
 import { createLoopDetector } from './loop-detection.js';
+import { createContextTracker } from './context-tracking.js';
 import type { ProviderProfile, ExecutionEnvironment, SessionConfig } from '../types/index.js';
 
 const defaultUsage = {
@@ -146,6 +147,7 @@ describe('processInput', () => {
         eventEmitter: createSessionEventEmitter(),
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -176,6 +178,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -225,6 +228,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -273,6 +277,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -318,6 +323,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -368,6 +374,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -425,6 +432,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -467,6 +475,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue,
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController: new AbortController(),
       };
 
@@ -500,6 +509,7 @@ describe('processInput', () => {
         eventEmitter,
         steeringQueue: createSteeringQueue(),
         loopDetector: createLoopDetector(),
+        contextTracker: createContextTracker(undefined),
         abortController,
       };
 

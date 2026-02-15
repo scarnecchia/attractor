@@ -1,5 +1,14 @@
 import type { StreamEvent, LLMRequest, Message, ContentPart } from '@attractor/llm';
-import { userMessage, assistantMessage, toolMessage, StreamAccumulator } from '@attractor/llm';
+import {
+  userMessage,
+  assistantMessage,
+  toolMessage,
+  StreamAccumulator,
+  AuthenticationError,
+  ContextLengthError,
+  ProviderError,
+  AbortError,
+} from '@attractor/llm';
 import type { LoopContext } from './session.js';
 import type { Turn } from '../types/index.js';
 import { dispatchToolCalls, type PendingToolCall, type ToolCallResult } from '../tools/dispatch.js';
@@ -50,35 +59,88 @@ export async function processInput(context: LoopContext): Promise<void> {
     const accumulator = new StreamAccumulator();
 
     try {
-      for await (const event of context.client.stream(request)) {
-        // Check abort again
+      try {
+        for await (const event of context.client.stream(request)) {
+          // Check abort again
+          if (context.abortController.signal.aborted) {
+            context.eventEmitter.emit({ kind: 'SESSION_END', sessionId: context.sessionId });
+            context.eventEmitter.complete();
+            return;
+          }
+
+          // Map SDK StreamEvent to SessionEvent and emit
+          mapAndEmitStreamEvent(event, context);
+
+          // Accumulate the event
+          accumulator.process(event);
+        }
+      } catch (err) {
         if (context.abortController.signal.aborted) {
           context.eventEmitter.emit({ kind: 'SESSION_END', sessionId: context.sessionId });
           context.eventEmitter.complete();
           return;
         }
-
-        // Map SDK StreamEvent to SessionEvent and emit
-        mapAndEmitStreamEvent(event, context);
-
-        // Accumulate the event
-        accumulator.process(event);
+        throw err;
       }
-    } catch (err) {
-      if (context.abortController.signal.aborted) {
-        context.eventEmitter.emit({ kind: 'SESSION_END', sessionId: context.sessionId });
-        context.eventEmitter.complete();
+    } catch (error: unknown) {
+      if (error instanceof AbortError) {
+        // Already handled by abort signal path (AC1.7 from Phase 4)
         return;
       }
-      throw err;
+
+      if (error instanceof AuthenticationError) {
+        // AC11.2: Surface immediately, session → CLOSED
+        context.eventEmitter.emit({ kind: 'ERROR', error: error as Error });
+        return;
+      }
+
+      if (error instanceof ContextLengthError) {
+        // AC11.3: Emit warning, session → CLOSED
+        context.eventEmitter.emit({ kind: 'CONTEXT_WARNING', usagePercent: 1.0 });
+        context.eventEmitter.emit({ kind: 'ERROR', error: error as Error });
+        return;
+      }
+
+      if (error instanceof ProviderError && error.retryable) {
+        // Retryable errors (429, 500-503) are handled by @attractor/llm's
+        // retry layer in stream()/generate(). If they still surface here,
+        // the retry budget was exhausted — treat as fatal.
+        context.eventEmitter.emit({ kind: 'ERROR', error: error as Error });
+        return;
+      }
+
+      // Unknown/unexpected errors → surface and close
+      context.eventEmitter.emit({
+        kind: 'ERROR',
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
+      return;
     }
 
     // Build AssistantTurn from accumulated response
     const response = accumulator.toResponse();
-    context.history.push({
-      kind: 'assistant',
+    const assistantTurn = {
+      kind: 'assistant' as const,
       content: response.content,
-    });
+    };
+    context.history.push(assistantTurn);
+
+    // Track context usage for AssistantTurn
+    let assistantChars = 0;
+    for (const part of assistantTurn.content) {
+      if (part.kind === 'TEXT') {
+        assistantChars += part.text.length;
+      } else if (part.kind === 'TOOL_CALL') {
+        assistantChars += JSON.stringify(part).length;
+      }
+    }
+    context.contextTracker.record(assistantChars);
+
+    // Check context window usage
+    const usagePercent = context.contextTracker.check();
+    if (usagePercent !== null) {
+      context.eventEmitter.emit({ kind: 'CONTEXT_WARNING', usagePercent });
+    }
 
     totalTurnsThisSession++;
 
@@ -174,10 +236,24 @@ export async function processInput(context: LoopContext): Promise<void> {
     }
 
     // Append ToolResultsTurn to history
-    context.history.push({
-      kind: 'tool_results',
+    const toolResultsTurn = {
+      kind: 'tool_results' as const,
       results: toolResultEntries,
-    });
+    };
+    context.history.push(toolResultsTurn);
+
+    // Track context usage for ToolResultsTurn
+    let toolResultsChars = 0;
+    for (const result of toolResultEntries) {
+      toolResultsChars += result.output.length;
+    }
+    context.contextTracker.record(toolResultsChars);
+
+    // Check context window usage again after tool results
+    const toolResultsUsagePercent = context.contextTracker.check();
+    if (toolResultsUsagePercent !== null) {
+      context.eventEmitter.emit({ kind: 'CONTEXT_WARNING', usagePercent: toolResultsUsagePercent });
+    }
 
     toolRoundsThisInput++;
   }
