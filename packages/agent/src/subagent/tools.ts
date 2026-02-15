@@ -97,10 +97,7 @@ function createSpawnAgentTool(context: SubAgentToolContext): RegisteredTool {
       };
 
       const childSession = createSession(childOptions);
-      const handle = (context.subagents as SubAgentMapInternal).spawn(
-        id,
-        childSession,
-      );
+      context.subagents.spawn(id, childSession);
 
       await childSession.submit(instruction);
 
@@ -266,7 +263,7 @@ function createCloseAgentTool(context: SubAgentToolContext): RegisteredTool {
         });
       }
 
-      (context.subagents as SubAgentMapInternal).close(id);
+      context.subagents.close(id);
 
       return JSON.stringify({
         success: true,
