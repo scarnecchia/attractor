@@ -86,7 +86,7 @@ describe('Error Handling in Agentic Loop', () => {
   });
 
   describe('AC11.2: AuthenticationError handling', () => {
-    it('should emit ERROR event and return when AuthenticationError is thrown', async () => {
+    it('should emit ERROR event and throw when AuthenticationError is thrown', async () => {
       const mockClient: Client = {
         stream: async function* () {
           throw new AuthenticationError(
@@ -127,7 +127,8 @@ describe('Error Handling in Agentic Loop', () => {
         abortController: new AbortController(),
       };
 
-      await processInput(context);
+      // processInput should throw after emitting ERROR event
+      await expect(processInput(context)).rejects.toThrow(AuthenticationError);
 
       // Emit SESSION_END to complete iterator
       eventEmitter.emit({ kind: 'SESSION_END', sessionId: 'test-session' });
@@ -185,7 +186,8 @@ describe('Error Handling in Agentic Loop', () => {
         abortController: new AbortController(),
       };
 
-      await processInput(context);
+      // processInput should throw after emitting events
+      await expect(processInput(context)).rejects.toThrow(ContextLengthError);
 
       // Emit SESSION_END to complete iterator
       eventEmitter.emit({ kind: 'SESSION_END', sessionId: 'test-session' });
@@ -249,7 +251,8 @@ describe('Error Handling in Agentic Loop', () => {
         abortController: new AbortController(),
       };
 
-      await processInput(context);
+      // processInput should throw after emitting ERROR event
+      await expect(processInput(context)).rejects.toThrow(RateLimitError);
 
       // Emit SESSION_END to complete iterator
       eventEmitter.emit({ kind: 'SESSION_END', sessionId: 'test-session' });
@@ -301,7 +304,8 @@ describe('Error Handling in Agentic Loop', () => {
         abortController: new AbortController(),
       };
 
-      await processInput(context);
+      // processInput should throw after emitting ERROR event
+      await expect(processInput(context)).rejects.toThrow(TypeError);
 
       // Emit SESSION_END to complete iterator
       eventEmitter.emit({ kind: 'SESSION_END', sessionId: 'test-session' });
@@ -352,7 +356,8 @@ describe('Error Handling in Agentic Loop', () => {
         abortController: new AbortController(),
       };
 
-      await processInput(context);
+      // processInput should throw after emitting ERROR event
+      await expect(processInput(context)).rejects.toThrow('string error');
 
       // Emit SESSION_END to complete iterator
       eventEmitter.emit({ kind: 'SESSION_END', sessionId: 'test-session' });

@@ -287,7 +287,7 @@ describe('Session Graceful Shutdown (AC11.5)', () => {
       await collectTask;
 
       const sessionEndEvents = events.filter((e) => e.kind === 'SESSION_END');
-      expect(sessionEndEvents.length).toBeLessThanOrEqual(2);
+      expect(sessionEndEvents).toHaveLength(1);
     });
   });
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Client, StreamEvent } from '@attractor/llm';
+import { AuthenticationError, ContextLengthError, RateLimitError } from '@attractor/llm';
 import { createSession } from './session.js';
 import type { ProviderProfile, ExecutionEnvironment, SessionConfig } from '../types/index.js';
 
@@ -415,6 +416,139 @@ describe('Session', () => {
 
       const history = session.history();
       expect(history.some((turn) => turn.kind === 'assistant')).toBe(true);
+    });
+  });
+
+  describe('error handling and state transitions (AC11.2, AC11.3)', () => {
+    it('should transition to CLOSED on AuthenticationError (AC11.2)', async () => {
+      const errorClient: Client = {
+        stream: async function* () {
+          throw new AuthenticationError(
+            'Invalid API key',
+            401,
+            'openai',
+            'invalid_api_key'
+          );
+        },
+        complete: async () => ({ content: [], finishReason: 'stop' }),
+      } as any;
+
+      const session = createSession({
+        profile: mockProfile,
+        environment: mockEnv,
+        client: errorClient,
+        config,
+      });
+
+      // Drain events (errors are emitted via the iterator)
+      const eventCollectorPromise = (async () => {
+        try {
+          for await (const event of session.events()) {
+            // consume events
+          }
+        } catch {
+          // Iterator throws when error is emitted, expected
+        }
+      })();
+
+      try {
+        await session.submit('Test');
+      } catch {
+        // Error is caught by session and emitted via iterator
+      }
+
+      // Give event collector time to process
+      await eventCollectorPromise;
+
+      expect(session.state()).toBe('CLOSED');
+    });
+
+    it('should transition to CLOSED on ContextLengthError (AC11.3)', async () => {
+      const errorClient: Client = {
+        stream: async function* () {
+          throw new ContextLengthError(
+            'Context length exceeded',
+            400,
+            'openai',
+            'context_length_exceeded'
+          );
+        },
+        complete: async () => ({ content: [], finishReason: 'stop' }),
+      } as any;
+
+      const session = createSession({
+        profile: mockProfile,
+        environment: mockEnv,
+        client: errorClient,
+        config,
+      });
+
+      // Drain events
+      const eventCollectorPromise = (async () => {
+        try {
+          for await (const event of session.events()) {
+            // consume events
+          }
+        } catch {
+          // Iterator throws when error is emitted, expected
+        }
+      })();
+
+      try {
+        await session.submit('Test');
+      } catch {
+        // Error is caught by session and emitted via iterator
+      }
+
+      // Give event collector time to process
+      await eventCollectorPromise;
+
+      expect(session.state()).toBe('CLOSED');
+    });
+
+    it('should transition to CLOSED on retryable ProviderError (AC11.3)', async () => {
+      const errorClient: Client = {
+        stream: async function* () {
+          throw new RateLimitError(
+            'Rate limit exceeded',
+            429,
+            'openai',
+            'rate_limit_exceeded',
+            null,
+            60
+          );
+        },
+        complete: async () => ({ content: [], finishReason: 'stop' }),
+      } as any;
+
+      const session = createSession({
+        profile: mockProfile,
+        environment: mockEnv,
+        client: errorClient,
+        config,
+      });
+
+      // Drain events
+      const eventCollectorPromise = (async () => {
+        try {
+          for await (const event of session.events()) {
+            // consume events
+          }
+        } catch {
+          // Iterator throws when error is emitted, expected
+        }
+      })();
+
+      try {
+        await session.submit('Test');
+      } catch {
+        // Error is caught by session and emitted via iterator
+      }
+
+      // Give event collector time to process
+      await eventCollectorPromise;
+
+      expect(session.state()).toBe('CLOSED');
     });
   });
 });

@@ -36,6 +36,8 @@ export async function processInput(context: LoopContext): Promise<void> {
     const steeringTurns = context.steeringQueue.drainSteering();
     for (const turn of steeringTurns) {
       context.history.push(turn);
+      // Track context usage for steering turn
+      context.contextTracker.record(turn.content.length);
     }
 
     // Build LLMRequest from history
@@ -90,31 +92,32 @@ export async function processInput(context: LoopContext): Promise<void> {
 
       if (error instanceof AuthenticationError) {
         // AC11.2: Surface immediately, session → CLOSED
-        context.eventEmitter.emit({ kind: 'ERROR', error: error as Error });
-        return;
+        context.eventEmitter.emit({ kind: 'ERROR', error });
+        throw error;
       }
 
       if (error instanceof ContextLengthError) {
         // AC11.3: Emit warning, session → CLOSED
         context.eventEmitter.emit({ kind: 'CONTEXT_WARNING', usagePercent: 1.0 });
-        context.eventEmitter.emit({ kind: 'ERROR', error: error as Error });
-        return;
+        context.eventEmitter.emit({ kind: 'ERROR', error });
+        throw error;
       }
 
       if (error instanceof ProviderError && error.retryable) {
         // Retryable errors (429, 500-503) are handled by @attractor/llm's
         // retry layer in stream()/generate(). If they still surface here,
         // the retry budget was exhausted — treat as fatal.
-        context.eventEmitter.emit({ kind: 'ERROR', error: error as Error });
-        return;
+        context.eventEmitter.emit({ kind: 'ERROR', error });
+        throw error;
       }
 
       // Unknown/unexpected errors → surface and close
+      const errorObj = error instanceof Error ? error : new Error(String(error));
       context.eventEmitter.emit({
         kind: 'ERROR',
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: errorObj,
       });
-      return;
+      throw errorObj;
     }
 
     // Build AssistantTurn from accumulated response
