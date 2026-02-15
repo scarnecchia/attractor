@@ -200,6 +200,21 @@ export function translateRequest(
     generationConfig['stopSequences'] = request.stopSequences;
   }
 
+  // Reasoning effort → Gemini thinking config
+  if (request.reasoningEffort) {
+    const budgetMap: Record<string, number> = {
+      low: 1024,
+      medium: 4096,
+      high: 16384,
+    };
+    const budget = budgetMap[request.reasoningEffort];
+    if (budget !== undefined) {
+      generationConfig['thinkingConfig'] = {
+        thinkingBudget: budget,
+      };
+    }
+  }
+
   if (Object.keys(generationConfig).length > 0) {
     body['generationConfig'] = generationConfig;
   }

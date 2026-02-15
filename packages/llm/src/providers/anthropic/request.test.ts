@@ -482,4 +482,65 @@ describe('Anthropic Request Translation', () => {
       expect(result.body['tool_choice']).toBeUndefined();
     });
   });
+
+  describe('reasoningEffort', () => {
+    it('maps low/medium/high to provider-specific format', () => {
+      const budgetMap = {
+        low: 1024,
+        medium: 4096,
+        high: 16384,
+      };
+
+      for (const [effort, budget] of Object.entries(budgetMap)) {
+        const request: LLMRequest = {
+          model: 'claude-opus-4-6',
+          messages: [{ role: 'user', content: 'hello' }],
+          reasoningEffort: effort as 'low' | 'medium' | 'high',
+        };
+
+        const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
+
+        expect(result.body['thinking']).toBeDefined();
+        const thinking = result.body['thinking'] as Record<string, unknown>;
+        expect(thinking['type']).toBe('enabled');
+        expect(thinking['budget_tokens']).toBe(budget);
+      }
+    });
+
+    it('omits reasoning params when reasoningEffort is undefined', () => {
+      const request: LLMRequest = {
+        model: 'claude-opus-4-6',
+        messages: [{ role: 'user', content: 'hello' }],
+      };
+
+      const result = translateRequest(request, 'test-api-key', 'https://api.anthropic.com');
+
+      expect(result.body['thinking']).toBeUndefined();
+    });
+
+    it('changing reasoningEffort between calls produces different bodies', () => {
+      const request1: LLMRequest = {
+        model: 'claude-opus-4-6',
+        messages: [{ role: 'user', content: 'hello' }],
+        reasoningEffort: 'low',
+      };
+
+      const result1 = translateRequest(request1, 'test-api-key', 'https://api.anthropic.com');
+
+      const request2: LLMRequest = {
+        model: 'claude-opus-4-6',
+        messages: [{ role: 'user', content: 'hello' }],
+        reasoningEffort: 'high',
+      };
+
+      const result2 = translateRequest(request2, 'test-api-key', 'https://api.anthropic.com');
+
+      expect(result1.body['thinking']).toBeDefined();
+      expect(result2.body['thinking']).toBeDefined();
+      const thinking1 = result1.body['thinking'] as Record<string, unknown>;
+      const thinking2 = result2.body['thinking'] as Record<string, unknown>;
+      expect(thinking1['budget_tokens']).toBe(1024);
+      expect(thinking2['budget_tokens']).toBe(16384);
+    });
+  });
 });

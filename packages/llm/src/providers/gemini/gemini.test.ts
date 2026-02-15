@@ -741,4 +741,182 @@ describe('Gemini Adapter', () => {
       expect(response.content[0]?.['kind']).toBe('TEXT');
     });
   });
+
+  describe('reasoningEffort', () => {
+    beforeEach(() => {
+      vi.stubGlobal('fetch', vi.fn());
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function getRequestBody(): Record<string, unknown> {
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      expect(calls.length).toBeGreaterThan(0);
+      const call = calls[0];
+      expect(call).toBeDefined();
+      const bodyStr = (call?.[1] as any)?.body;
+      expect(bodyStr).toBeDefined();
+      return JSON.parse(bodyStr as string);
+    }
+
+    it('maps low/medium/high to provider-specific format', async () => {
+      const budgetMap = {
+        low: 1024,
+        medium: 4096,
+        high: 16384,
+      };
+
+      for (const [effort, budget] of Object.entries(budgetMap)) {
+        const adapter = new GeminiAdapter('test-key');
+        const request: LLMRequest = {
+          model: 'gemini-2.0-flash',
+          messages: [
+            {
+              role: 'user',
+              content: [{ kind: 'TEXT', text: 'hello' }],
+            },
+          ],
+          reasoningEffort: effort as 'low' | 'medium' | 'high',
+        };
+
+        vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            candidates: [
+              {
+                content: {
+                  role: 'model',
+                  parts: [{ text: 'test response' }],
+                },
+              },
+            ],
+            usageMetadata: {
+              promptTokenCount: 10,
+              candidatesTokenCount: 5,
+            },
+          }),
+          text: async () => '',
+          headers: new Headers(),
+        } as Response);
+
+        await adapter.complete(request);
+
+        const body = getRequestBody();
+        expect(body['generationConfig']).toBeDefined();
+        const generationConfig = body['generationConfig'] as Record<string, unknown>;
+        expect(generationConfig['thinkingConfig']).toBeDefined();
+        const thinkingConfig = generationConfig['thinkingConfig'] as Record<string, unknown>;
+        expect(thinkingConfig['thinkingBudget']).toBe(budget);
+
+        vi.mocked(globalThis.fetch).mockClear();
+      }
+    });
+
+    it('omits reasoning params when reasoningEffort is undefined', async () => {
+      const adapter = new GeminiAdapter('test-key');
+      const request: LLMRequest = {
+        model: 'gemini-2.0-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [{ kind: 'TEXT', text: 'hello' }],
+          },
+        ],
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                role: 'model',
+                parts: [{ text: 'test response' }],
+              },
+            },
+          ],
+          usageMetadata: {
+            promptTokenCount: 10,
+            candidatesTokenCount: 5,
+          },
+        }),
+        text: async () => '',
+        headers: new Headers(),
+      } as Response);
+
+      await adapter.complete(request);
+
+      const body = getRequestBody();
+      if (body['generationConfig']) {
+        const generationConfig = body['generationConfig'] as Record<string, unknown>;
+        expect(generationConfig['thinkingConfig']).toBeUndefined();
+      }
+    });
+
+    it('changing reasoningEffort between calls produces different bodies', async () => {
+      const adapter = new GeminiAdapter('test-key');
+
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [
+            {
+              content: {
+                role: 'model',
+                parts: [{ text: 'test response' }],
+              },
+            },
+          ],
+          usageMetadata: {
+            promptTokenCount: 10,
+            candidatesTokenCount: 5,
+          },
+        }),
+        text: async () => '',
+        headers: new Headers(),
+      } as Response;
+
+      const request1: LLMRequest = {
+        model: 'gemini-2.0-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [{ kind: 'TEXT', text: 'hello' }],
+          },
+        ],
+        reasoningEffort: 'low',
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(mockResponse);
+      await adapter.complete(request1);
+      const body1 = getRequestBody();
+
+      vi.mocked(globalThis.fetch).mockClear();
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(mockResponse);
+      const request2: LLMRequest = {
+        model: 'gemini-2.0-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [{ kind: 'TEXT', text: 'hello' }],
+          },
+        ],
+        reasoningEffort: 'high',
+      };
+      await adapter.complete(request2);
+      const body2 = getRequestBody();
+
+      expect(body1['generationConfig']).toBeDefined();
+      expect(body2['generationConfig']).toBeDefined();
+      const config1 = (body1['generationConfig'] as Record<string, unknown>)['thinkingConfig'] as Record<string, unknown>;
+      const config2 = (body2['generationConfig'] as Record<string, unknown>)['thinkingConfig'] as Record<string, unknown>;
+      expect(config1['thinkingBudget']).toBe(1024);
+      expect(config2['thinkingBudget']).toBe(16384);
+    });
+  });
 });

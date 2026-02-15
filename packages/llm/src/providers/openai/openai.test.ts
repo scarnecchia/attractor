@@ -627,4 +627,98 @@ describe('OpenAI Adapter', () => {
       expect(events.some((e) => e.type === 'FINISH')).toBe(true);
     });
   });
+
+  describe('reasoningEffort', () => {
+    it('maps low/medium/high to provider-specific format', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+
+      for (const effort of ['low', 'medium', 'high'] as const) {
+        fetchMock.mockResolvedValueOnce(mockResponse);
+        const request: LLMRequest = {
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: 'hello' }],
+          reasoningEffort: effort,
+        };
+
+        await adapter.complete(request);
+
+        const body = getCallBody();
+        expect(body.reasoning).toBeDefined();
+        expect(body.reasoning.effort).toBe(effort);
+        fetchMock.mockClear();
+      }
+    });
+
+    it('omits reasoning params when reasoningEffort is undefined', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const request: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+      };
+
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+
+      await adapter.complete(request);
+
+      const body = getCallBody();
+      expect(body.reasoning).toBeUndefined();
+    });
+
+    it('changing reasoningEffort between calls produces different bodies', async () => {
+      const adapter = new OpenAIAdapter('test-key');
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'resp-123',
+          model: 'gpt-4o',
+          output: [],
+          usage: { input_tokens: 10, output_tokens: 5 },
+          stop_reason: 'stop',
+        }),
+      };
+
+      const request1: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+        reasoningEffort: 'low',
+      };
+      fetchMock.mockResolvedValueOnce(mockResponse);
+      await adapter.complete(request1);
+      const body1 = getCallBody();
+
+      fetchMock.mockClear();
+      fetchMock.mockResolvedValueOnce(mockResponse);
+      const request2: LLMRequest = {
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: 'hello' }],
+        reasoningEffort: 'high',
+      };
+      await adapter.complete(request2);
+      const body2 = getCallBody();
+
+      expect(body1.reasoning.effort).toBe('low');
+      expect(body2.reasoning.effort).toBe('high');
+      expect(body1.reasoning).not.toEqual(body2.reasoning);
+    });
+  });
 });

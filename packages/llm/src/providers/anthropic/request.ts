@@ -183,6 +183,19 @@ export function translateRequest(
     body['stop_sequences'] = request.stopSequences;
   }
 
+  // Reasoning effort → Anthropic thinking budget
+  if (request.reasoningEffort) {
+    const budgetMap: Record<string, number> = {
+      low: 1024,
+      medium: 4096,
+      high: 16384,
+    };
+    const budget = budgetMap[request.reasoningEffort];
+    if (budget !== undefined) {
+      body['thinking'] = { type: 'enabled', budget_tokens: budget };
+    }
+  }
+
   // Provider options escape hatch
   let autoCache = true;
   const anthropicOptions = request.providerOptions?.['anthropic'];

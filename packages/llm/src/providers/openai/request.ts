@@ -163,6 +163,11 @@ export function translateRequest(
     body['stream'] = true;
   }
 
+  // Reasoning effort
+  if (request.reasoningEffort) {
+    body['reasoning'] = { effort: request.reasoningEffort };
+  }
+
   // Provider options escape hatch
   const openaiOptions = request.providerOptions?.['openai'];
   if (openaiOptions) {
