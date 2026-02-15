@@ -62,6 +62,7 @@ export function createSession(options: SessionOptions): Session {
   const contextTracker = createContextTracker(options.config.contextWindowSize, 0.8);
   let abortController = new AbortController();
   const subagentMap = createSubAgentMap();
+  let isAborting = false;
 
   // Register subagent tools on the profile after creation
   const subAgentContext: SubAgentToolContext = {
@@ -137,9 +138,29 @@ export function createSession(options: SessionOptions): Session {
   };
 
   const abort = async (): Promise<void> => {
+    // Make abort idempotent: if already aborting, return immediately
+    if (isAborting) {
+      return;
+    }
+    isAborting = true;
+
+    // 1. Cancel active LLM stream via AbortController.abort()
     abortController.abort();
+
+    // 2. Kill running processes:
+    //    LocalExecutionEnvironment's execCommand already handles SIGTERM → 2s → SIGKILL
+    //    via the abort signal passed to child processes
+
+    // 3. Close all subagents via subAgentMap.closeAll()
+    subagentMap.closeAll();
+
+    // 4. Transition state to CLOSED
     currentState = 'CLOSED';
+
+    // 5. Emit SESSION_END event
     eventEmitter.emit({ kind: 'SESSION_END', sessionId });
+
+    // 6. Complete the event emitter (emitter.complete())
     eventEmitter.complete();
   };
 
