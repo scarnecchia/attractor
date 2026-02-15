@@ -164,12 +164,11 @@ describe('SubAgentMap', () => {
 
     it('should be no-op when closing already-completed subagent', () => {
       const map = createSubAgentMap();
-      const mockSession = createMockSession();
+      const mockAbort = vi.fn(async () => {});
+      const mockSession = createMockSession({ abort: mockAbort });
       const handle = map.spawn('agent1', mockSession);
 
       (map as any)._setStatus('agent1', 'completed');
-      const mockAbort = vi.fn();
-      mockSession.abort = mockAbort;
 
       map.close('agent1');
 
@@ -277,7 +276,7 @@ describe('Subagent Tools', () => {
       expect(childHistory!.length).toBeGreaterThanOrEqual(1);
 
       // Verify instruction was added to child history
-      const userTurns = childHistory!.filter((t) => t.kind === 'user');
+      const userTurns = childHistory!.filter((t: any) => t.kind === 'user');
       expect(userTurns).toHaveLength(1);
       expect(userTurns[0]?.content).toBe('Test instruction');
     });
@@ -455,7 +454,7 @@ describe('Subagent Tools', () => {
 
       const mockSession = createMockSession({
         events: vi.fn(mockEvents),
-        history: vi.fn(() => [
+        history: vi.fn((): any => [
           { kind: 'user', content: 'Test' },
           {
             kind: 'assistant',
@@ -526,7 +525,7 @@ describe('Subagent Tools', () => {
 
       const mockSession = createMockSession({
         events: vi.fn(mockEvents),
-        history: vi.fn(() => [{ kind: 'user', content: 'Test' }]),
+        history: vi.fn((): any => [{ kind: 'user', content: 'Test' }]),
       });
 
       subagentMap.spawn('agent1', mockSession);
