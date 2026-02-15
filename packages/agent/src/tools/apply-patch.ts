@@ -43,7 +43,7 @@ export function parsePatch(text: string): Array<PatchOperation> | string {
   const patchContent = text.substring(beginIdx + '*** Begin Patch'.length, endIdx).trim();
   const lines = patchContent.split('\n');
 
-  const operations: PatchOperation[] = [];
+  const operations: Array<PatchOperation> = [];
   let i = 0;
 
   while (i < lines.length) {
@@ -282,7 +282,7 @@ async function applyOperations(
           return `Error: Could not find context for hunk in ${op.path}`;
         }
 
-        const newLines: string[] = [];
+        const newLines: Array<string> = [];
 
         // Add all lines before the match
         for (let i = 0; i < matchIdx; i++) {
