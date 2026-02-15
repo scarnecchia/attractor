@@ -756,7 +756,7 @@ describe('Gemini Adapter', () => {
       expect(calls.length).toBeGreaterThan(0);
       const call = calls[0];
       expect(call).toBeDefined();
-      const bodyStr = (call?.[1] as any)?.body;
+      const bodyStr = (call?.[1] as RequestInit | undefined)?.body;
       expect(bodyStr).toBeDefined();
       return JSON.parse(bodyStr as string);
     }
