@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { discoverProjectDocs } from './discovery.js';
-import type { ExecutionEnvironment, ExecResult } from '../types/index.js';
+import type { ExecutionEnvironment } from '../types/index.js';
 
 function createMockEnv(overrides?: Partial<ExecutionEnvironment>): ExecutionEnvironment {
   return {
@@ -267,6 +267,31 @@ describe('discoverProjectDocs', () => {
       const result = await discoverProjectDocs(env, 'anthropic');
 
       expect(result).toContain('Agent AGENTS');
+    });
+
+    it('should not scan parent directories above root in non-git fallback', async () => {
+      const files: Record<string, string> = {
+        '/repo/AGENTS.md': '# Root AGENTS (should not appear)',
+        '/repo/packages/agent/AGENTS.md': '# Agent AGENTS',
+      };
+
+      const env = createMockEnv({
+        execCommand: async () => ({
+          stdout: '',
+          stderr: 'not a git repo',
+          exitCode: 128,
+          timedOut: false,
+          durationMs: 10,
+        }),
+        fileExists: async (path: string) => Boolean(files[path]),
+        readFile: async (path: string) => files[path] || '',
+        workingDirectory: () => '/repo/packages/agent',
+      });
+
+      const result = await discoverProjectDocs(env, 'anthropic');
+
+      expect(result).toContain('Agent AGENTS');
+      expect(result).not.toContain('Root AGENTS (should not appear)');
     });
   });
 

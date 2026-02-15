@@ -79,24 +79,17 @@ export async function discoverProjectDocs(
 }
 
 function buildPathList(root: string, workingDir: string): Array<string> {
-  const paths: Array<string> = [];
-  let current = workingDir;
-
-  // Collect all directories from working dir up to root
-  while (current.length > 0 && current !== '/') {
-    paths.unshift(current);
-    const parent = current.substring(0, current.lastIndexOf('/'));
-    if (parent === current) {
-      break;
+  const paths: Array<string> = [root];
+  if (workingDir === root) return paths;
+  if (workingDir.startsWith(root + '/')) {
+    const relative = workingDir.substring(root.length + 1);
+    const segments = relative.split('/');
+    let current = root;
+    for (const segment of segments) {
+      current = `${current}/${segment}`;
+      paths.push(current);
     }
-    current = parent || '/';
   }
-
-  // If we haven't hit root yet, add it
-  if (paths.length === 0 || paths[0] !== root) {
-    paths.unshift(root);
-  }
-
   return paths;
 }
 
