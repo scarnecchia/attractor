@@ -1,4 +1,4 @@
-import type { RegisteredTool, ToolDefinition, ToolExecutor } from '../../types/index.js';
+import type { RegisteredTool, ToolDefinition, ToolExecutor, ExecutionEnvironment } from '../../types/index.js';
 import {
   createReadFileTool,
   createEditFileTool,
@@ -42,14 +42,7 @@ export function createGeminiTools(): ReadonlyArray<RegisteredTool> {
         },
       }),
       // Custom executor that accepts "path" instead of "file_path"
-      (async (args, env) => {
-        const modifiedArgs = {
-          file_path: args['path'] ?? args['file_path'],
-          offset: args['offset'],
-          limit: args['limit'],
-        };
-        return readFileExecutor(modifiedArgs, env);
-      }) as ToolExecutor,
+      createGeminiReadFileExecutor(),
     ),
 
     // edit_file with "expected_replacements" count instead of "replace_all" boolean
@@ -80,16 +73,7 @@ export function createGeminiTools(): ReadonlyArray<RegisteredTool> {
         },
       }),
       // Custom executor that handles expected_replacements count
-      (async (args, env) => {
-        const expectedReplacements = (args['expected_replacements'] as number | undefined) ?? 1;
-        const modifiedArgs = {
-          file_path: args['file_path'],
-          old_string: args['old_string'],
-          new_string: args['new_string'],
-          replace_all: expectedReplacements > 1,
-        };
-        return editFileExecutor(modifiedArgs, env);
-      }) as ToolExecutor,
+      createGeminiEditFileExecutor(),
     ),
 
     createWriteFileTool(),
@@ -144,4 +128,28 @@ export function createGeminiTools(): ReadonlyArray<RegisteredTool> {
 
     createListDirTool(),
   ];
+}
+
+function createGeminiReadFileExecutor(): ToolExecutor {
+  return async (args, env) => {
+    const modifiedArgs = {
+      file_path: args['path'] ?? args['file_path'],
+      offset: args['offset'],
+      limit: args['limit'],
+    };
+    return readFileExecutor(modifiedArgs, env);
+  };
+}
+
+function createGeminiEditFileExecutor(): ToolExecutor {
+  return async (args, env) => {
+    const expectedReplacements = (args['expected_replacements'] as number | undefined) ?? 1;
+    const modifiedArgs = {
+      file_path: args['file_path'],
+      old_string: args['old_string'],
+      new_string: args['new_string'],
+      replace_all: expectedReplacements > 1,
+    };
+    return editFileExecutor(modifiedArgs, env);
+  };
 }

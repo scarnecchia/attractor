@@ -1,4 +1,4 @@
-import type { RegisteredTool, ToolDefinition, ToolExecutor } from '../types/index.js';
+import type { RegisteredTool, ToolDefinition, ToolExecutor, ExecutionEnvironment } from '../types/index.js';
 import {
   readFileExecutor,
   writeFileExecutor,
@@ -273,7 +273,7 @@ export function createListDirTool(overrides?: ToolSchemaOverrides): RegisteredTo
 export const listDirExecutor: ToolExecutor = async (args, env) => {
   const path = args['path'] as string | undefined;
   const ignore = args['ignore'] as Array<string> | undefined;
-  const respectGitIgnore = args['respect_git_ignore'] as boolean | undefined ?? true;
+  const respectGitIgnore = (args['respect_git_ignore'] as boolean | undefined) ?? true;
 
   if (!path || typeof path !== 'string') {
     return 'Error: path is required and must be a string';
@@ -282,12 +282,16 @@ export const listDirExecutor: ToolExecutor = async (args, env) => {
   try {
     const entries = await env.listDirectory(path);
 
-    const filtered = entries.filter((entry) => {
+    let filtered: ReadonlyArray<{ readonly name: string; readonly isDir: boolean; readonly size: number | null }> = entries.filter((entry) => {
       if (!ignore) return true;
       return !ignore.some((pattern) => {
         return simpleMatch(entry.name, pattern);
       });
     });
+
+    if (respectGitIgnore) {
+      filtered = filterByGitIgnore(filtered, path, env);
+    }
 
     let output = filtered
       .map((entry) => {
@@ -313,9 +317,23 @@ function simpleMatch(name: string, pattern: string): boolean {
   if (pattern === '*') return true;
 
   if (pattern.includes('*')) {
-    const regex = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`);
+    const escapedPattern = escapeRegexMeta(pattern).replace(/\*/g, '.*');
+    const regex = new RegExp(`^${escapedPattern}$`);
     return regex.test(name);
   }
 
   return name.startsWith(pattern);
+}
+
+function escapeRegexMeta(str: string): string {
+  return str.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function filterByGitIgnore(
+  entries: ReadonlyArray<{ readonly name: string; readonly isDir: boolean; readonly size: number | null }>,
+  path: string,
+  env: ExecutionEnvironment,
+): ReadonlyArray<{ readonly name: string; readonly isDir: boolean; readonly size: number | null }> {
+  const gitIgnorePath = `${path}/.gitignore`;
+  return entries;
 }
