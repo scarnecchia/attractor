@@ -40,11 +40,25 @@ async function dispatchParallel(
   registry: ToolRegistry,
   env: ExecutionEnvironment,
 ): Promise<ReadonlyArray<ToolCallResult>> {
-  const promises = toolCalls.map((call) => executeToolCall(call, registry, env));
+  const callsWithIndex = Array.from(toolCalls).map((call, index) => ({
+    index,
+    call,
+  }));
+
+  const promises = callsWithIndex.map((item) => executeToolCall(item.call, registry, env));
   const settled = await Promise.allSettled(promises);
 
-  return settled.map((result, index) => {
-    const toolCallId = toolCalls[index].toolCallId;
+  return callsWithIndex.map((item) => {
+    const result = settled[item.index];
+    const toolCallId = item.call.toolCallId;
+
+    if (!result) {
+      return {
+        toolCallId,
+        output: 'Tool execution failed: unknown error',
+        isError: true,
+      };
+    }
 
     if (result.status === 'fulfilled') {
       return result.value;
